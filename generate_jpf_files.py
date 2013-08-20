@@ -43,7 +43,7 @@ class GenerateConfFile:
                 method_counter += 1
 
             output_file.write("\n")
-            output_file.write("classpath+=,${jpf-jdart}/lib/junit4.jar,%s\n" % self.classpath)
+            output_file.write("classpath+=,%s\n" % self.classpath)
             output_file.write("\n")
             output_file.write("shell=gov.nasa.jpf.jdart.JDart\n")
             output_file.write("symbolic.dp=NativeZ3\n")
