@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+
+This build file receives 6 arguments:
+- 1st argument (arg0) is a path to the JaCoCo library
+- 2nd argument (arg1) is a name of a unit test class
+- 3rd argument (arg2) is classpath. Put here everything needed to run unit tests
+- 4th argument (arg3) is the path of a package, i.e. if a package name is org.example, then arg3=org/example
+- 5th argument (arg4) is the root directory where package sources can be found
+- 6th argument (arg5) is the root directory where package class files can be found
+
+-->
+
+<project name="Java Code Coverage report generation" default="report" xmlns:jacoco="antlib:org.jacoco.ant">
+    
+    <description>
+        Generates code coverage reports for JUnit unit tests provided at the command line
+    </description>
+
+    <taskdef uri="antlib:org.jacoco.ant" resource="org/jacoco/ant/antlib.xml">
+        <classpath path="${arg0}" />
+    </taskdef>
+
+    <target name="test">
+        <jacoco:coverage destfile="./jacoco-site/jacoco.exec">
+            <junit fork="true" forkmode="once">
+                <test name="${arg1}" />
+                <classpath path="${arg2}" />
+            </junit>
+        </jacoco:coverage>
+    </target>
+
+    <target name="report" depends="test">
+        <!-- Step 3. Create coverage report -->
+        <jacoco:report>
+            
+            <!-- This task needs the collected execution data and ... -->
+            <executiondata>
+                <file file="./jacoco-site/jacoco.exec" />
+            </executiondata>
+            
+            <!-- the class files and optional source files ... -->
+            <structure name="JaCoCo code coverage report">
+                <classfiles>
+                    <fileset dir="${arg5}">
+                        <include name="${arg3}/**/*.class" />
+                    </fileset>
+                </classfiles>
+                <sourcefiles encoding="UTF-8">
+                    <fileset dir="${arg4}" />
+                </sourcefiles>
+            </structure>
+            
+            <!-- to produce reports in different formats. -->
+            <html destdir="./jacoco-site/html" />
+            <xml destfile="./jacoco-site/report.xml" />
+        </jacoco:report>
+    </target>
+    
+</project>
