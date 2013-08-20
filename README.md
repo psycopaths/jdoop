@@ -5,20 +5,11 @@ To be added soon.
 # Generating code coverage reports
 
 JPF-Doop has a script that generates a code coverage report for JUnit
-tests. The script is `report.py`, and it has a few dependencies:
+tests. The script is `report.py`, and it has a few dependencies. First
+of all, clone this repository. In addition, the following is needed:
 
 - [Python](http://python.org), version 2.7
 - [Apache Ant](https://ant.apache.org/),
-- [JUnit](http://junit.org/),
-- [Jacoco](http://www.eclemma.org/jacoco/), a code coverage library
-  for Java,
-- the `command.py` script from this repository; put it into the same
-  directory where `report.py` is, and
-- the `jacoco.xml` Ant build file from this repository; also keep it
-  in the same directory where `report.py` is.
-
-The JUnit and JaCoCo libraries are `.jar` files, and can be put into a
-`lib/` directory.
 
 To get help on how to run the code coverage script from the command
 line, type:
