@@ -29,7 +29,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description='Generates a JaCoCo code coverage report for given unit tests.')
-    parser.add_argument('--jacocopath', required=True, help='Path to the JaCoCo jar file')
+    parser.add_argument('--jacocopath', default=os.path.normcase("lib/jacocoant.jar"), help='Path to the JaCoCo jar file')
     parser.add_argument('--unittests', nargs='+', help='A list of base names of JUnit files (e.g. RandoopTest) that should be run in order to determine code coverage')
     parser.add_argument('--classpath', default=".", help='Classpath is a Java classpath, where paths are separated by the : symbol')
     parser.add_argument('--packagepath', required=True, help='Path of a package, i.e. if a package name is org.example, put org/example here')
@@ -37,5 +37,5 @@ if __name__ == "__main__":
     parser.add_argument('--buildpath', required=True, help='Root directory where package class files can be found')
     params = parser.parse_args()
 
-    report = Report(params.jacocopath, params.unittests, params.packagepath, params.classpath, params.sourcepath, params.buildpath)
+    report = Report(params.jacocopath, params.unittests, params.packagepath, ":".join([params.classpath, "lib/junit4.jar"]), params.sourcepath, params.buildpath)
     report.run_code_coverage()
