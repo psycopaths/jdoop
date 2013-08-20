@@ -30,7 +30,7 @@ following command to get a code coverage report:
 
 ```
 #!bash
-python report.py --unittests MyTest --sourcepath src/ --buildpath build/ --packagepath org/apache/commons/collections --classpath build/:build/tests:my-tests/
+$ python report.py --unittests MyTest --sourcepath src/ --buildpath build/ --packagepath org/apache/commons/collections --classpath build/:build/tests:my-tests/
 ```
 
 The script will generate a code coverage report in two formats - HTML
