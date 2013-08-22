@@ -81,7 +81,7 @@ class RandoopRun:
         else:
             concrete_values_str = " --literals-file=concrete-values.txt --literals-level=ALL"
 
-        command = Command(args = "java -ea -cp " + ":".join([self.paths.lib_randoop, self.paths.lib_junit, self.paths.sut_compilation_dir]) + " randoop.main.Main gentests --classlist=" + self.classlist_filename + " --junit-output-dir=" + self.unit_tests_directory + " --junit-classname=" + self.unit_tests_name + " --timelimit=%d" % self.unit_tests_timelimit + " --outputlimitrandom=%d" % self.unit_tests_number_upper_limit + " --forbid-null=false --small-tests=true" + concrete_values_str)
+        command = Command(args = "java -ea -cp " + ":".join([self.paths.lib_randoop, self.paths.lib_junit, self.paths.sut_compilation_dir]) + " randoop.main.Main gentests --classlist=" + self.classlist_filename + " --junit-output-dir=" + self.unit_tests_directory + " --junit-classname=" + self.unit_tests_name + " --timelimit=%s" % self.unit_tests_timelimit + " --outputlimitrandom=%s" % self.unit_tests_number_upper_limit + " --forbid-null=false --small-tests=true" + concrete_values_str)
 
         command.run()
 
@@ -114,7 +114,7 @@ class JPFDoop:
     def run_randoop(self, unit_tests, classlist, params, runittests = 100000000, use_concrete_values = False):
         """Invokes Randoop"""
 
-        randoop_run = RandoopRun(unit_tests.name, unit_tests.directory, classlist.filename, params.rtimelimit, runittests, self.paths, use_concrete_values)
+        randoop_run = RandoopRun(unit_tests.name, unit_tests.directory, classlist.filename, str(params.rtimelimit), str(runittests), self.paths, use_concrete_values)
         randoop_run.run()
 
     def compile_tests(self, unit_tests):
@@ -187,8 +187,8 @@ if __name__ == "__main__":
     parser.add_argument('--path', required=True, help='path within the root directory to the source files')
     parser.add_argument('--root', default='src/examples/', help='source files root directory')
     parser.add_argument('--classlist', default='classlist.txt', help='Name of a file to write a file list to')
-    parser.add_argument('--rtimelimit', default=5, help='Timelimit for a single run of Randoop')
-    parser.add_argument('--runittests', default=10, help='Upper limit of number of unit tests Randoop will generate in a single run')
+    parser.add_argument('--rtimelimit', default=30, help='Timelimit for a single run of Randoop')
+    parser.add_argument('--runittests', default=20, help='Upper limit of number of unit tests Randoop will generate in a single run')
     parser.add_argument('--conffile', default='jpfdoop.ini', help="A configuration file with settings for JPF-Doop")
     params = parser.parse_args()
 
