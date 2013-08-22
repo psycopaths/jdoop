@@ -77,10 +77,3 @@ class CoordinateConfFileGeneration:
 
                 g = GenerateConfFile('randooped', self.classpath)
                 g.generate_jpf_conf_file(whole_path, os.path.join(self.location, class_name + ".jpf"))
-
-                # with open(self.location + class_name + ".jpf", "w") as h:
-                #     h.write(sout)
-
-# if __name__ == "__main__":
-#     coor = CoordinateConfFileGeneration('randooped', 'src/examples', 'classes-to-analyze')
-#     coor.run()

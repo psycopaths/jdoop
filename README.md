@@ -16,7 +16,7 @@ level, run the following:
 
 ```
 #!bash
-$ python jpfdoop.py --package org.apache.commons.collections --root ../jpf-doop-examples/ --path org/apache/commons/collections
+$ python jpfdoop.py --package org.apache.commons.collections --root ../jpf-doop-examples/
 ```
 
 A code coverage report will be generated and can be found in the

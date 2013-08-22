@@ -136,29 +136,29 @@ class JPFDoop:
         except:
             pass
 
-        compile_tests_command = Command(args = "javac -g -d " + self.paths.tests_compilation_dir + " -cp " + ":".join([os.path.join(self.jpf_jdart_path, "build"), os.path.join(self.jpf_jdart_path, "build/annotations/"), self.paths.sut_compilation_dir, self.paths.tests_compilation_dir, self.paths.lib_junit]) + " " + os.path.join(root_dir, unit_tests.randooped_package_name +  "/*java"))
+        compile_tests_command = Command(args = "javac -g -d " + self.paths.tests_compilation_dir + " -cp " + ":".join([os.path.join(self.jpf_jdart_path, "build"), os.path.join(self.jpf_jdart_path, "build/annotations/"), self.paths.sut_compilation_dir, self.paths.tests_compilation_dir, self.paths.lib_junit]) + " " + os.path.join("./", unit_tests.randooped_package_name +  "/*java"))
         compile_tests_command.run()
 
     def symbolize_unit_tests(self, unit_tests, root_dir):
         """Replaces concrete method input values with symbolic variables in unit tests"""
 
-        symbolic_unit_tests = SymbolicUnitTests(unit_tests.randooped_package_name, root_dir, "classes-to-analyze", os.path.join(unit_tests.directory, unit_tests.name + '0.java'))
+        symbolic_unit_tests = SymbolicUnitTests(unit_tests.randooped_package_name, "./", "classes-to-analyze", os.path.join(unit_tests.directory, unit_tests.name + '0.java'))
         symbolic_unit_tests.generate_symbolized_unit_tests()
 
     def generate_jpf_conf(self, unit_tests, root_dir):
         """Generates JPF configuration files (.jpf) for JDart"""
         
-        jpf_configuration_files = CoordinateConfFileGeneration(unit_tests.randooped_package_name, root_dir, 'classes-to-analyze', ",".join([self.paths.tests_compilation_dir, self.paths.lib_junit]))
+        jpf_configuration_files = CoordinateConfFileGeneration(unit_tests.randooped_package_name, "./", 'classes-to-analyze', ",".join([self.paths.tests_compilation_dir, self.paths.lib_junit]))
         jpf_configuration_files.run()
 
     def run_jdart(self, unit_tests, root_dir):
         """Calls JDart on the symbolized unit tests"""
 
-        with open(os.path.join(root_dir, unit_tests.randooped_package_name, "classes-to-analyze")) as f:
+        with open(os.path.join("./", unit_tests.randooped_package_name, "classes-to-analyze")) as f:
             for line_nl in f:
                 class_name = line_nl[:-1]
 
-                whole_path = os.path.join(root_dir, unit_tests.randooped_package_name, class_name + ".jpf")
+                whole_path = os.path.join("./", unit_tests.randooped_package_name, class_name + ".jpf")
 
                 jdart = CommandWithTimeout(cmd=os.path.join(self.jpf_core_path, "bin/jpf"), args=os.path.join(self.jpf_core_path, "bin/jpf") + " " + whole_path)
                 jdart.run(timeout=20)
@@ -184,7 +184,6 @@ class JPFDoop:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Generates unit tests with Randoop only or with JPF-Doop.')
     parser.add_argument('--packagename', required=True, help='A Java package with classes to analyze.')
-    parser.add_argument('--path', required=True, help='path within the root directory to the source files')
     parser.add_argument('--root', default='src/examples/', help='source files root directory')
     parser.add_argument('--classlist', default='classlist.txt', help='Name of a file to write a file list to')
     parser.add_argument('--rtimelimit', default=30, help='Timelimit for a single run of Randoop')
@@ -192,12 +191,13 @@ if __name__ == "__main__":
     parser.add_argument('--conffile', default='jpfdoop.ini', help="A configuration file with settings for JPF-Doop")
     params = parser.parse_args()
 
-    # Create a list of classes to be tested
-    classlist = ClassList(params.classlist)
-    classlist.write_list_of_classes(params.root, params.path)
-
     jpfdoop = JPFDoop()
     jpfdoop.read_config_file(params.conffile)
+    jpfdoop.paths.package_path = os.path.normpath(params.packagename.replace(".", "/"))
+
+    # Create a list of classes to be tested
+    classlist = ClassList(params.classlist)
+    classlist.write_list_of_classes(params.root, jpfdoop.paths.package_path)
 
     unit_tests = UnitTests(name = "Randoop1Test", directory = "tests-1st-round")
 
@@ -218,7 +218,7 @@ if __name__ == "__main__":
 
     # Replace a placeholder with a valid class name in the file with
     # concrete values
-    jpfdoop.put_class_name(classlist, params.root, params.path)
+    jpfdoop.put_class_name(classlist, params.root, jpfdoop.paths.package_path)
 
     unit_tests2 = UnitTests(name = "Randoop2Test", directory = "tests-2nd-round")
 
@@ -232,5 +232,5 @@ if __name__ == "__main__":
     # Generate a code coverage report
     unit_tests_list = [unit_tests.name, unit_tests2.name]
     classpath = ":".join([jpfdoop.paths.lib_junit, jpfdoop.paths.sut_compilation_dir, jpfdoop.paths.tests_compilation_dir])
-    report = Report(jpfdoop.paths.lib_jacoco, unit_tests_list, os.path.normpath(params.path), classpath, params.root, jpfdoop.paths.sut_compilation_dir)
+    report = Report(jpfdoop.paths.lib_jacoco, unit_tests_list, os.path.normpath(jpfdoop.paths.package_path), classpath, params.root, jpfdoop.paths.sut_compilation_dir)
     report.run_code_coverage()
