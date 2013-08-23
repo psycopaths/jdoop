@@ -4,6 +4,14 @@ JPF-Doop is a testing tool for Java libraries. It is based on the Java
 PathFinder's concolic execution engine [jDART][0] and [Randoop][1], a
 feedback-directed random testing engine.
 
+# Setting up
+
+After you've cloned the repository, you can configure various
+parameters in `jpfdoop.ini`. Most importantly, change `jpf-core` and
+`jpf-jdart` in the `jpfdoop` section so that they point to the main
+directories of jpf-core and jpf-jdart, respectively. Do not use `~` as
+a shorthand for your home directory.
+
 # Usage
 
 To run JPF-Doop, a few parameters need to be passed to it, including a
