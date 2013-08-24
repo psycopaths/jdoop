@@ -57,19 +57,14 @@ class GenerateConfFile:
         output_file.close()
 
 class CoordinateConfFileGeneration:
-    def __init__(self, packagename, root, classes_to_analyze, classpath):
+    def __init__(self, packagename, classes_to_analyze, classpath):
         self.packagename = packagename
-        self.root = root
         self.classes_to_analyze = classes_to_analyze
         self.classpath = classpath
-
-        self.location = root
-        if self.location[:-1] != "/":
-            self.location += "/"
-        self.location += packagename.replace(".", "/") + "/"
+        self.location = packagename.replace(".", os.sep)
 
     def run(self):
-        with open(os.path.join(self.location, self.classes_to_analyze), 'r') as f:
+        with open(os.path.normpath(os.path.join(self.location, self.classes_to_analyze)), 'r') as f:
             for line_nl in f:
                 class_name = line_nl[:-1]
 

@@ -45,7 +45,7 @@ class ClassList:
         
 
 class UnitTests:
-    def __init__(self, name = "Randoop1Test", directory = "tests-1st-round"):
+    def __init__(self, name = "Randoop1Test", directory = "tests-round-1"):
         self.directory = directory
         self.name = name
         self.randooped_package_name = "randooped"
@@ -55,12 +55,11 @@ class Paths:
         pass
 
 class RandoopRun:
-    def __init__(self, unit_tests_name, unit_tests_directory, classlist_filename, timelimit, unit_tests_number_upper_limit, paths, use_concrete_values = False):
+    def __init__(self, unit_tests_name, unit_tests_directory, classlist_filename, timelimit, paths, use_concrete_values = False):
         self.unit_tests_name = unit_tests_name
         self.unit_tests_directory = unit_tests_directory
         self.classlist_filename = classlist_filename
         self.unit_tests_timelimit = timelimit
-        self.unit_tests_number_upper_limit = unit_tests_number_upper_limit
         self.paths = paths
         self.use_concrete_values = use_concrete_values
 
@@ -81,7 +80,7 @@ class RandoopRun:
         else:
             concrete_values_str = " --literals-file=concrete-values.txt --literals-level=ALL"
 
-        command = Command(args = "java -ea -cp " + ":".join([self.paths.lib_randoop, self.paths.lib_junit, self.paths.sut_compilation_dir]) + " randoop.main.Main gentests --classlist=" + self.classlist_filename + " --junit-output-dir=" + self.unit_tests_directory + " --junit-classname=" + self.unit_tests_name + " --timelimit=%s" % self.unit_tests_timelimit + " --outputlimitrandom=%s" % self.unit_tests_number_upper_limit + " --forbid-null=false --small-tests=true" + concrete_values_str)
+        command = Command(args = "java -ea -cp " + ":".join([self.paths.lib_randoop, self.paths.lib_junit, self.paths.sut_compilation_dir]) + " randoop.main.Main gentests --classlist=" + self.classlist_filename + " --junit-output-dir=" + self.unit_tests_directory + " --junit-classname=" + self.unit_tests_name + " --timelimit=%s" % self.unit_tests_timelimit +  " --forbid-null=false --small-tests=true --testsperfile=1" + concrete_values_str)
 
         command.run()
 
@@ -111,10 +110,10 @@ class JPFDoop:
             print str(err) + " in " + config_file_name
             sys.exit(1)
 
-    def run_randoop(self, unit_tests, classlist, params, runittests = 100000000, use_concrete_values = False):
+    def run_randoop(self, unit_tests, classlist, params, use_concrete_values = False):
         """Invokes Randoop"""
 
-        randoop_run = RandoopRun(unit_tests.name, unit_tests.directory, classlist.filename, str(params.rtimelimit), str(runittests), self.paths, use_concrete_values)
+        randoop_run = RandoopRun(unit_tests.name, unit_tests.directory, classlist.filename, str(params.rtimelimit), self.paths, use_concrete_values)
         randoop_run.run()
 
     def compile_tests(self, unit_tests):
@@ -139,26 +138,71 @@ class JPFDoop:
         compile_tests_command = Command(args = "javac -g -d " + self.paths.tests_compilation_dir + " -cp " + ":".join([os.path.join(self.jpf_jdart_path, "build"), os.path.join(self.jpf_jdart_path, "build/annotations/"), self.paths.sut_compilation_dir, self.paths.tests_compilation_dir, self.paths.lib_junit]) + " " + os.path.join("./", unit_tests.randooped_package_name +  "/*java"))
         compile_tests_command.run()
 
-    def symbolize_unit_tests(self, unit_tests, root_dir):
+    def select_unit_test_files(self, unit_tests, count):
+
+        import re, random
+
+        # Instead of relying on
+        # <unit_tests.randooped_package_name>0.java only, list all
+        # Java files with unit tests, select <count> of them at
+        # random, and process them. Now there is one method per Java
+        # file
+
+        dir_list = os.listdir(unit_tests.directory)
+
+        prog = re.compile(unit_tests.name + "[0-9]+\.java")
+        unit_tests_list = filter(prog.match, dir_list)
+
+        print "# of unit tests: %d" % len(unit_tests_list)
+
+        # Now select only <count> of them
+
+        if count > len(unit_tests_list):
+            unit_tests_indices = [i for i in range(len(unit_tests_list))]
+            # create a list of all numbers 0..
+        else:
+            unit_tests_indices = random.sample(range(len(unit_tests_list)), count)
+
+        # print unit_tests_indices
+
+        return unit_tests_indices
+
+    def symbolize_unit_tests(self, unit_tests, count):
         """Replaces concrete method input values with symbolic variables in unit tests"""
 
-        symbolic_unit_tests = SymbolicUnitTests(unit_tests.randooped_package_name, "./", "classes-to-analyze", os.path.join(unit_tests.directory, unit_tests.name + '0.java'))
-        symbolic_unit_tests.generate_symbolized_unit_tests()
+        unit_test_indices = self.select_unit_test_files(unit_tests, count)
+
+        print "count: %d" % count
+        print unit_test_indices
+
+        # Remove the file with class names
+        try:
+            os.remove(os.path.join(unit_tests.randooped_package_name, "classes-to-analyze"))
+        except OSError, e:
+            pass
+
+        for unit_test_index in unit_test_indices:
+            # Something is wrong here with this classes-to-analyze. Or
+            # maybe not... probably whenever there is a new unit test,
+            # it just gets appended to the file. Check that
+
+            symbolic_unit_tests = SymbolicUnitTests(unit_tests.randooped_package_name, "classes-to-analyze", os.path.join(unit_tests.directory, unit_tests.name + str(unit_test_index) +'.java'), ['test' + str(unit_test_index) + 'Class'])
+            symbolic_unit_tests.generate_symbolized_unit_tests()
 
     def generate_jpf_conf(self, unit_tests, root_dir):
         """Generates JPF configuration files (.jpf) for JDart"""
         
-        jpf_configuration_files = CoordinateConfFileGeneration(unit_tests.randooped_package_name, "./", 'classes-to-analyze', ",".join([self.paths.tests_compilation_dir, self.paths.lib_junit]))
+        jpf_configuration_files = CoordinateConfFileGeneration(unit_tests.randooped_package_name, 'classes-to-analyze', ",".join([self.paths.tests_compilation_dir, self.paths.lib_junit]))
         jpf_configuration_files.run()
 
     def run_jdart(self, unit_tests, root_dir):
         """Calls JDart on the symbolized unit tests"""
 
-        with open(os.path.join("./", unit_tests.randooped_package_name, "classes-to-analyze")) as f:
+        with open(os.path.join(unit_tests.randooped_package_name, "classes-to-analyze")) as f:
             for line_nl in f:
                 class_name = line_nl[:-1]
 
-                whole_path = os.path.join("./", unit_tests.randooped_package_name, class_name + ".jpf")
+                whole_path = os.path.join(unit_tests.randooped_package_name, class_name + ".jpf")
 
                 jdart = CommandWithTimeout(cmd=os.path.join(self.jpf_core_path, "bin/jpf"), args=os.path.join(self.jpf_core_path, "bin/jpf") + " " + whole_path)
                 jdart.run(timeout=20)
@@ -187,7 +231,7 @@ if __name__ == "__main__":
     parser.add_argument('--root', default='src/examples/', help='source files root directory')
     parser.add_argument('--classlist', default='classlist.txt', help='Name of a file to write a file list to')
     parser.add_argument('--rtimelimit', default=30, help='Timelimit for a single run of Randoop')
-    parser.add_argument('--runittests', default=20, help='Upper limit of number of unit tests Randoop will generate in a single run')
+    parser.add_argument('--runittests', default=20, type=int, help='Upper limit of number of unit tests Randoop will generate in a single run')
     parser.add_argument('--conffile', default='jpfdoop.ini', help="A configuration file with settings for JPF-Doop")
     params = parser.parse_args()
 
@@ -199,13 +243,13 @@ if __name__ == "__main__":
     classlist = ClassList(params.classlist)
     classlist.write_list_of_classes(params.root, jpfdoop.paths.package_path)
 
-    unit_tests = UnitTests(name = "Randoop1Test", directory = "tests-1st-round")
+    unit_tests = UnitTests(name = "Randoop1Test", directory = "tests-round-1")
 
     # Invoke Randoop to generate unit tests
-    jpfdoop.run_randoop(unit_tests, classlist, params, params.runittests)
+    jpfdoop.run_randoop(unit_tests, classlist, params)
 
     # Symbolize unit tests
-    jpfdoop.symbolize_unit_tests(unit_tests, params.root)
+    jpfdoop.symbolize_unit_tests(unit_tests, params.runittests)
 
     # Generate JPF configuration files
     jpfdoop.generate_jpf_conf(unit_tests, params.root)
@@ -220,7 +264,7 @@ if __name__ == "__main__":
     # concrete values
     jpfdoop.put_class_name(classlist, params.root, jpfdoop.paths.package_path)
 
-    unit_tests2 = UnitTests(name = "Randoop2Test", directory = "tests-2nd-round")
+    unit_tests2 = UnitTests(name = "Randoop2Test", directory = "tests-round-2")
 
     # Run Randoop for the second time
     jpfdoop.run_randoop(unit_tests2, classlist, params, use_concrete_values = True)

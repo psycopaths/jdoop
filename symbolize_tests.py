@@ -142,10 +142,10 @@ class Literal:
 
 class SymbolicUnitTests:
 
-    def __init__(self, package_name, path, list_file, input_file):
+    def __init__(self, package_name, list_file, input_file, class_names):
         self.output_file = None
         self.method_name = None
-        self.class_name = None
+        self.class_name = class_names[0]
 
         self.class_names_file = list_file
 
@@ -156,24 +156,13 @@ class SymbolicUnitTests:
         # assert re.match("[a-zA-Z][a-zA-Z]*(\.[a-zA-Z][a-zA-Z]*)*", package_name)
         self.package_name = package_name
         
-        # combine the path and the package name to create the
-        # directory structure
-        self.path = path
-        if self.path[:-1] != "/":
-            self.path += "/"
-        self.path += package_name.replace(".", "/") + "/"
+        self.path = package_name.replace(".", os.sep)
 
         try:
             os.makedirs(self.path)
         except OSError as exception:
             if exception.errno != errno.EEXIST:
                 raise
-
-        # Remove the file with class names
-        try:
-            os.remove(self.path + self.class_names_file)
-        except OSError, e:
-            pass
 
     def initialize_output_file(self):
         self.output_file = []
@@ -182,7 +171,6 @@ class SymbolicUnitTests:
         self.output_file.append("import gov.nasa.jpf.jdart.Symbolic;")
         self.output_file.append("import junit.framework.*;\n")
         self.method_name = None
-        self.class_name = None
 
     def finalize_and_write_output_file(self):
 
@@ -200,10 +188,10 @@ class SymbolicUnitTests:
 
         self.output_file.append("}\n")
 
-        with open(self.path + self.class_name + ".java", 'w') as f:
+        with open(os.path.join(self.path, self.class_name + ".java"), 'w') as f:
             f.write("\n".join(self.output_file))
         
-        with open(self.path + self.class_names_file, 'a') as f:
+        with open(os.path.join(self.path, self.class_names_file), 'a') as f:
             f.write(self.class_name + "\n")
 
     def find_parameter_parantheses(self, line):
@@ -252,7 +240,6 @@ class SymbolicUnitTests:
     # parameters. Parameters are delimited by a comma
     def split_into_parameters(self, s):
 
-        # print "Received the following string: " + s
         list_of_parameters = []
 
         in_double_quotes = False
@@ -265,19 +252,12 @@ class SymbolicUnitTests:
 
         while i < length:
 
-            # print "i = %d, s[%d] = %c" % (i, i, s[i])
-            # print "in_word = " + str(in_word)
-            # print "in_double_quotes = " + str(in_double_quotes)
-
             if not in_word and s[i] != ',':
                 start = i
                 in_word = True
 
             if in_double_quotes:
                 if s[i] == "\\":
-                    # if i < length - 1 and s[i + 1] == '"':
-                    #     i += 2
-                    #     continue
                     i += 2
                     continue
 
@@ -285,7 +265,6 @@ class SymbolicUnitTests:
                     in_double_quotes = False
                     in_word = False
                     list_of_parameters.append(s[start:i+1].lstrip().rstrip())
-                    # print "Just added a word starting at %d and ending at %d. Word: %s" % (start, i + 1, s[start:i+1])
                     i += 1
 
                 else:
@@ -303,7 +282,6 @@ class SymbolicUnitTests:
             if s[i] == ',':
                 if in_word:
                     list_of_parameters.append(s[start:i].lstrip().rstrip())
-                    # print "Just added a word starting at %d and ending at %d. Word: %s" % (start, i, s[start:i])
                     in_word = False
                 
                 i += 1
@@ -318,8 +296,6 @@ class SymbolicUnitTests:
 
     def generate_symbolized_unit_tests(self):
 
-        # print "In the main generate method"
-
         sym_variables_def_pos = None
         sym_variables_whitespace = None
         method_count = 0
@@ -327,14 +303,13 @@ class SymbolicUnitTests:
         self.initialize_output_file()
 
         sym_var_counter = 0
+        has_seen_class_name = False
 
         with open(self.input_file, 'r') as f:
             for line_nl in f:
                 # Remove the newline character
                 line = line_nl[:-1]
                 whitespace = line[:len(line) - len(line.lstrip())]
-
-                # print "Yet another line in the input file"
 
                 if re.search("public class", line):
                     continue
@@ -360,14 +335,14 @@ class SymbolicUnitTests:
                         sym_variables_whitespace = whitespace
                     # extract method name and store it for later usage
                     self.method_name = line.lstrip().split(" ")[2][:-2]
-                    self.class_name = self.method_name + "Class"
+                    has_seen_class_name = True
                     self.output_file.append("public class " + self.class_name + " extends TestCase {\n")
                     self.output_file.append("  public static boolean debug = false;\n")
 
                     sym_variables_def_pos = len(self.output_file)
 
                 # Avoid too many empty lines at the beginning of the file
-                if line.lstrip() == "" and not self.class_name:
+                if line.lstrip() == "" and not has_seen_class_name:
                     continue
 
                 # Skip JUnit assertion statements
@@ -400,8 +375,6 @@ class SymbolicUnitTests:
 
                         non_interesting = False
 
-                        # print "The line %s has ( at %d and ) at %d" % (line, lpar, rpar)
-
                         # Check if it is a static method call or a constructor call
 
                         # Check if it is a new array line
@@ -412,20 +385,9 @@ class SymbolicUnitTests:
                         if re.search("= null;", line):
                             non_interesting = True
 
-                        # If it's a constructor call...
-                        # if re.search("= new", line) and lpar != -1 and rpar != -1:
-                        #     print "In the line %s it's a constructor call" % line
-                        # elif re.search("= new", line):
-                        #     print "In the line %s it's a new array" % line
-                        # else:
-                        #     print "In the line %s it's a method call" % line
-
                     if non_interesting:
                         self.output_file.append(line)
                         continue
-
-                    # self.output_file.append(line)
-                    # continue
 
                 # Since we got this far, we must be in a method call line or a constructor call line
 
@@ -438,10 +400,6 @@ class SymbolicUnitTests:
                     continue
 
                 parameters = self.split_into_parameters(line[lpar + 1:rpar])
-
-                # print "line:        " + line
-                # print "parameters:  " + " --- ".join(parameters)
-                # print ""
 
                 # Assume none of the parameters will be turned to symbolic,
                 # i.e. that all of them are objects
@@ -464,13 +422,6 @@ class SymbolicUnitTests:
                             suffix = parameters[i][len(prefix):]
                         else:
                             suffix = parameters[i]
-
-                        # if suffix.lstrip() == "":
-                        #     suffix = parameters[i]
-
-                    # print "line is:   " + line
-                    # print "prefix is: " + prefix + "!!!"
-                    # print "suffix is: " + suffix + "!!!"
 
                     # Check if the current parameter is int, double, bool, or
                     # string. The order of testing is important
@@ -539,14 +490,14 @@ class SymbolicUnitTests:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process JUnit tests generated by Randoop to make them fit for symbolic analysis by jDART.')
     parser.add_argument('--package', default='randooped')
-    parser.add_argument('--root', default='src/examples')
+    parser.add_argument('--root', default='./')
     parser.add_argument('--listfile', default='classes-to-analyze')
     params = parser.parse_args()
 
-    unit_tests_directory = "tests-1st-round"
+    unit_tests_directory = "tests-round-1"
     unit_tests_name = "Randoop1Test"
     asdf = '%s/%s%s' % (unit_tests_directory, unit_tests_name, '0.java')
     print asdf
-    unit_tests = SymbolicUnitTests(params.packagename, "src/examples", "classes-to-analyze", asdf)
+    unit_tests = SymbolicUnitTests(params.package, "./", "classes-to-analyze", asdf, "test1Class")
     # unit_tests = SymbolicUnitTests(params.package, params.root, params.listfile)
     unit_tests.generate_symbolized_unit_tests()
