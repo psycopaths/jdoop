@@ -70,5 +70,6 @@ class CoordinateConfFileGeneration:
 
                 whole_path = os.path.join(self.location, class_name + ".java")
 
-                g = GenerateConfFile('randooped', self.classpath)
+                # g = GenerateConfFile('randooped', self.classpath)
+                g = GenerateConfFile(self.packagename, self.classpath)
                 g.generate_jpf_conf_file(whole_path, os.path.join(self.location, class_name + ".jpf"))

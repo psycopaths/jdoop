@@ -9,7 +9,7 @@ if __name__ == "__main__":
     parser.add_argument('--concretevaluesfile', default='concrete-values-tmp.txt')
     params = parser.parse_args()
 
-    result = open('concrete-values.txt', 'w')
+    result = open('concrete-values.txt', 'a')
 
     with open(params.concretevaluesfile, 'r') as f:
         for line in f:
