@@ -31,7 +31,10 @@ class ClassList:
                     # No need to worry about abstract classes nor
                     # interfaces because Randoop will take care of
                     # that
-                    ret.append(dirpath[len(os.path.normpath(base)) + 1:].replace("/", ".") + "." + name[:-len(".java")])
+
+                    # Check if this is a meta-package
+                    if not name.startswith('package-info'):
+                        ret.append(dirpath[len(os.path.normpath(base)) + 1:].replace("/", ".") + "." + name[:-len(".java")])
 
         self.list_of_classes = ret
 
@@ -124,7 +127,7 @@ class JPFDoop:
         except:
             pass
 
-        compile_tests_command = Command(args = "javac -g -d " + self.paths.tests_compilation_dir + " -cp " + ":".join([self.paths.sut_compilation_dir, self.paths.lib_junit]) + " " + unit_tests.directory + "/*java")
+        compile_tests_command = Command(args = "javac -g -d " + self.paths.tests_compilation_dir + " -classpath " + ":".join([self.paths.sut_compilation_dir, self.paths.lib_junit]) + " " + unit_tests.directory + "/*java")
         compile_tests_command.run()
 
     def compile_symbolic_tests(self, root_dir, unit_tests):
@@ -135,7 +138,7 @@ class JPFDoop:
         except:
             pass
 
-        compile_tests_command = Command(args = "javac -g -d " + self.paths.tests_compilation_dir + " -cp " + ":".join([os.path.join(self.jpf_jdart_path, "build"), os.path.join(self.jpf_jdart_path, "build/annotations/"), self.paths.sut_compilation_dir, self.paths.tests_compilation_dir, self.paths.lib_junit]) + " " + os.path.join("./", unit_tests.randooped_package_name +  "/*java"))
+        compile_tests_command = Command(args = "javac -g -d " + self.paths.tests_compilation_dir + " -classpath " + ":".join([os.path.join(self.jpf_jdart_path, "build"), os.path.join(self.jpf_jdart_path, "build/annotations/"), self.paths.sut_compilation_dir, self.paths.tests_compilation_dir, self.paths.lib_junit]) + " " + os.path.join("./", unit_tests.randooped_package_name +  "/*java"))
         compile_tests_command.run()
 
     def select_unit_test_files(self, unit_tests, count):

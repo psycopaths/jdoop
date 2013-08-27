@@ -33,9 +33,10 @@ if __name__ == "__main__":
     parser.add_argument('--unittests', nargs='+', help='A list of base names of JUnit files (e.g. RandoopTest) that should be run in order to determine code coverage')
     parser.add_argument('--classpath', default=".", help='Classpath is a Java classpath, where paths are separated by the : symbol')
     parser.add_argument('--packagepath', required=True, help='Path of a package, i.e. if a package name is org.example, put org/example here')
-    parser.add_argument('--sourcepath', required=True, help='Root directory where package sources can be found')
+    parser.add_argument('--sourcepath', nargs='+', help='Root directory where package sources can be found')
     parser.add_argument('--buildpath', required=True, help='Root directory where package class files can be found')
     params = parser.parse_args()
 
-    report = Report(params.jacocopath, params.unittests, params.packagepath, ":".join([params.classpath, "lib/junit4.jar"]), params.sourcepath, params.buildpath)
-    report.run_code_coverage()
+    for src in params.sourcepath:
+        report = Report(params.jacocopath, params.unittests, params.packagepath, ":".join([params.classpath, "lib/junit4.jar"]), src, params.buildpath)
+        report.run_code_coverage()
