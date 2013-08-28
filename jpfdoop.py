@@ -252,11 +252,19 @@ class JPFDoop:
                 jdart = CommandWithTimeout(cmd=os.path.join(self.jpf_core_path, "bin/jpf"), args=os.path.join(self.jpf_core_path, "bin/jpf") + " " + whole_path)
                 jdart.run(timeout=20)
 
-    def put_class_name(self, classlist, root_dir, path):
+    def put_class_name(self, classlist, root_dir, path, input_file_name = 'concrete-values-tmp.txt', output_file_name = 'concrete-values.txt'):
         """Replaces a placeholder with a valid class name in the file with concrete values"""
 
-        put_class_name_command = Command(args = "python put-class-name.py --classname %s" % classlist.get_all_java_source_files(root_dir, path)[0])
-        put_class_name_command.run()
+        output_file = open(output_file_name, 'a')
+
+        with open(input_file_name, 'r') as f:
+            for line in f:
+                if line != "<This is a placeholder for the class name>\n":
+                    output_file.write(line)
+                else:
+                    output_file.write(classlist.get_all_java_source_files(root_dir, path)[0] + "\n")
+
+        output_file.close()
 
     def run_code_coverage(self, unit_tests_list, package_path):
         """Runs JaCoCo on all unit tests from the list and generates a code coverage report"""
