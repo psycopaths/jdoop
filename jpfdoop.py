@@ -252,19 +252,39 @@ class JPFDoop:
                 jdart = CommandWithTimeout(cmd=os.path.join(self.jpf_core_path, "bin/jpf"), args=os.path.join(self.jpf_core_path, "bin/jpf") + " " + whole_path)
                 jdart.run(timeout=20)
 
-    def put_class_name(self, classlist, root_dir, path, input_file_name = 'concrete-values-tmp.txt', output_file_name = 'concrete-values.txt'):
-        """Replaces a placeholder with a valid class name in the file with concrete values"""
+    def consolidate_concrete_values(self, classlist, root_dir, path, input_file_name = 'concrete-values-tmp.txt', output_file_name = 'concrete-values.txt', template_filename = 'randoop-format.template'):
+        """Reorganizes the output file so that all concrete values are unique"""
 
-        output_file = open(output_file_name, 'a')
+        import sets
+        from string import Template
 
-        with open(input_file_name, 'r') as f:
-            for line in f:
-                if line != "<This is a placeholder for the class name>\n":
-                    output_file.write(line)
-                else:
-                    output_file.write(classlist.get_all_java_source_files(root_dir, path)[0] + "\n")
+        # Collect all values and put them into a set so that there is no value repead twice
+        unique_values = sets.Set()
 
-        output_file.close()
+        for file_name in [input_file_name, output_file_name]:
+            try:
+                with open(file_name, 'r') as f:
+                    for line in f:
+                        if ":" in line:
+                            unique_values.add(line[:-1])
+            except:
+                pass
+
+        # If there is a boolean value, make sure both boolean values are in
+        if "boolean:true" in unique_values or "boolean:false" in unique_values:
+            unique_values.add("boolean:true")
+            unique_values.add("boolean:false")
+
+        # Read a template for the Randoop format from the file
+        randoop_template_str = ''
+        with open(template_filename, 'r') as f:
+            randoop_template_str = f.read()
+
+        randoop_template = Template(randoop_template_str)
+
+        # Write those unique values back to the output file
+        with open(output_file_name, 'w') as f:
+            f.write(randoop_template.substitute(classname = classlist.get_all_java_source_files(root_dir, path)[0], values = "\n".join(unique_values)))
 
     def run_code_coverage(self, unit_tests_list, package_path):
         """Runs JaCoCo on all unit tests from the list and generates a code coverage report"""
@@ -314,7 +334,7 @@ if __name__ == "__main__":
     # Start creating a list of unit tests
     unit_tests_list = [ut.name for ut in new_unit_tests]
 
-    for i in range(2,3):
+    for i in range(2,5):
 
         # Symbolize unit tests
         jpfdoop.symbolize_unit_tests(unit_tests, params.runittests)
@@ -330,7 +350,7 @@ if __name__ == "__main__":
 
         # Replace a placeholder with a valid class name in the file with
         # concrete values
-        jpfdoop.put_class_name(classlist, params.root, jpfdoop.paths.package_path)
+        jpfdoop.consolidate_concrete_values(classlist, params.root, jpfdoop.paths.package_path)
 
         unit_tests = UnitTests(name = "Randoop%dTest" % i, directory = "tests-round-%d" % i, randooped_package_name = "randooped%d" % i)
 
