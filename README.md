@@ -45,8 +45,8 @@ generated or obtained in some other way. The script is `report.py`,
 and it has a few dependencies. First of all, clone this repository. In
 addition, the following is needed:
 
-- [Python][2], version 2.7,
-- [Apache Ant][3].
+- [Python][3], version 2.7,
+- [Apache Ant][4].
 
 To get help on how to run the code coverage script from the command
 line, type:
@@ -57,24 +57,23 @@ $ python report.py --help
 ```
 
 The script takes 6 arguments, where the `--jacocopath` argument is
-optional. For example, if you have JUnit tests for the
-`org.apache.commons.collections` package, you have given these unit
-tests a base name `MyTest` and their source files are in a `my-tests/`
-directory, source Java files of the package are in an `src/` directory
-and the package class files are in a `build/` directory, and your
-JUnit tests are compiled to the `build/tests` directory, then run the
-following command to get a code coverage report:
+optional. There is an example package named `branching` in the
+`report-examples/` directory. If you build the example in such a way
+that `.class` files are in the same directory where respective `.java`
+files are, this is how you would generate a code coverage report for
+the example:
 
 ```
 #!bash
-$ python report.py --unittests MyTest --sourcepath src/ --buildpath build/ --packagepath org/apache/commons/collections --classpath build/:build/tests:my-tests/
+$ python report.py --unittests TestBranching --classpath report-examples/:report-examples/branching/tests/ --sourcepath report-examples/ --packagepath branching --buildpath report-examples/
 ```
 
-The script will generate a code coverage report in two formats - HTML
-and XML. Both can be found in a `jacoco-site/` directory.
+The `report.py` script will generate a code coverage report in two
+formats - HTML and XML. Both can be found in a `jacoco-site/`
+directory.
 
 [0]: https://bitbucket.org/psycopaths/jpf-jdart
-[1]: https://bitbucket.org/psycopaths/randoop
+[1]: https://code.google.com/p/randoop/
 [2]: https://bitbucket.org/psycopaths/jpf-doop-examples
 [3]: http://python.org
 [4]: https://ant.apache.org/

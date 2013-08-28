@@ -314,7 +314,7 @@ if __name__ == "__main__":
     # Start creating a list of unit tests
     unit_tests_list = [ut.name for ut in new_unit_tests]
 
-    for i in range(2,5):
+    for i in range(2,3):
 
         # Symbolize unit tests
         jpfdoop.symbolize_unit_tests(unit_tests, params.runittests)
