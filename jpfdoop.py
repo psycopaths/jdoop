@@ -14,6 +14,8 @@ from generate_jpf_files import *
 from command import *
 from report import *
 
+have_to_finish_by = None
+
 class ClassList:
     def __init__(self, filename):
         self.filename = filename
@@ -99,7 +101,6 @@ class JPFDoop:
         self.concrete_values_all_runs = sets.Set()
         self.concrete_values_all_runs_stats = []
 
-        self.concrete_values_iterations = sets.Set()
         self.concrete_values_iterations_stats = []
 
 
@@ -259,14 +260,14 @@ class JPFDoop:
 
 
     def run_jdart(self, unit_tests, root_dir, classlist, path, concrete_values_file_name = 'concrete-values.txt', template_filename = 'randoop-format.template'):
-        """Calls JDart on the symbolized unit tests"""
+        """Calls JDart on the symbolized unit tests and collects concrete values used in the concolic execution"""
 
         from string import Template
 
         concrete_values_iteration = sets.Set()
         concrete_values_iteration_stats = []
 
-        global_before = len(self.concrete_values_all_runs)
+        global_before_size = len(self.concrete_values_all_runs)
 
         with open(os.path.join(unit_tests.randooped_package_name, "classes-to-analyze")) as f:
             for line_nl in f:
@@ -328,7 +329,8 @@ class JPFDoop:
             self.concrete_values_all_runs.add("boolean:true")
             self.concrete_values_all_runs.add("boolean:false")
 
-        global_after = len(self.concrete_values_all_runs)
+        global_after_size = len(self.concrete_values_all_runs)
+        self.concrete_values_iterations_stats.append([len(concrete_values_iteration), global_after_size - global_before_size, unit_tests.name])
 
         # Read a template for the Randoop format from the file
         randoop_template_str = ''
@@ -506,3 +508,16 @@ if __name__ == "__main__":
 
     for c in jpfdoop.clock.iterkeys():
         jpfdoop.print_clock(c)
+
+    if not params.randoop_only:
+        # Print statistics about concrete values
+        print ""
+        print "Concrete values stats\n"
+
+        print "Contribution of each JDart execution"
+        for s in jpfdoop.concrete_values_all_runs_stats:
+            print "Set size: %4d, contribution: %4d, unit tests name: %s" % (s[0], s[1], s[2])
+
+        print "\nContribution of each iteration"
+        for s in jpfdoop.concrete_values_iterations_stats:
+            print "Set size: %4d, contribution: %4d, unit tests name: %s" % (s[0], s[1], s[2])
