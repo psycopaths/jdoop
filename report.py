@@ -10,14 +10,21 @@ class Report:
         self.classpath = classpath
         self.source_dir = source_dir
         self.build_dir = build_dir
+    
+    def run_testing(self, ut_list = None):
+
+        if ut_list == None:
+            ut_list = self.unit_tests_list
+
+        # Execute unit tests
+        for uts in ut_list:
+            code_coverage_command = Command(args = "ant -f jacoco.xml -Darg0=%s -Darg1=%s -Darg2=%s -Darg3=%s -Darg4=%s -Darg5=%s test" % (self.jacoco_path, uts, self.classpath, self.package_path, self.source_dir, self.build_dir))
+            code_coverage_command.run()
 
     def run_code_coverage(self):
         """Runs JaCoCo on all unit tests from the list and generates a code coverage report"""
 
-        # Run tests for all unit test sets but the last one
-        for uts in self.unit_tests_list[:-1]:
-            code_coverage_command = Command(args = "ant -f jacoco.xml -Darg0=%s -Darg1=%s -Darg2=%s -Darg3=%s -Darg4=%s -Darg5=%s test" % (self.jacoco_path, uts, self.classpath, self.package_path, self.source_dir, self.build_dir))
-            code_coverage_command.run()
+        self.run_testing(ut_list = self.unit_tests_list[:-1])
 
         # Run tests for the last unit test set and generate a report
         report_command = Command(args = "ant -f jacoco.xml -Darg0=%s -Darg1=%s -Darg2=%s -Darg3=%s -Darg4=%s -Darg5=%s report" % (self.jacoco_path, self.unit_tests_list[-1], self.classpath, self.package_path, self.source_dir, self.build_dir))
