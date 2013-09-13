@@ -12,22 +12,30 @@ class Command:
 
 
 class CommandWithTimeout:
-    def __init__(self, cmd, args = None):
-        self.cmd = cmd
+    def __init__(self, args = None):
         self.process = None
         self.args = args
+        self.thread = None
 
-    def run(self, timeout):
+    def run_without_joining(self):
         def target():
-            # self.process = subprocess.Popen(args=self.args, executable=self.cmd, shell=True, preexec_fn=os.setsid)
             self.process = subprocess.Popen(args=self.args, shell=True, preexec_fn=os.setsid)
             self.process.communicate()
 
-        thread = threading.Thread(target=target)
-        thread.start()
+        self.thread = threading.Thread(target=target)
+        self.thread.start()
 
-        thread.join(timeout)
-        if thread.is_alive():
-            os.killpg(self.process.pid, signal.SIGTERM)
-            thread.join()
-            print 'Timeout Termination: ' + self.cmd + ' ' + self.args
+    def join_thread(self, timeout = None):
+        if timeout == None:
+            self.thread.join()
+        else:
+            self.thread.join(timeout)
+            if self.thread.is_alive():
+                os.killpg(self.process.pid, signal.SIGTERM)
+                self.thread.join()
+                print 'Timeout Termination: ' + self.args
+
+    def run(self, timeout = None):
+
+        self.run_without_joining()
+        self.join_thread(timeout)
