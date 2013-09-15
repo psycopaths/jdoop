@@ -492,12 +492,12 @@ if __name__ == "__main__":
     parser.add_argument('--package', default='randooped')
     parser.add_argument('--root', default='./')
     parser.add_argument('--listfile', default='classes-to-analyze')
+    parser.add_argument('--unit-tests-name', default='Randoop1Test')
+    parser.add_argument('--unit-tests-directory', default='tests-round-1')
     params = parser.parse_args()
 
-    unit_tests_directory = "tests-round-1"
-    unit_tests_name = "Randoop1Test"
-    asdf = '%s/%s%s' % (unit_tests_directory, unit_tests_name, '0.java')
+    asdf = '%s/%s%s' % (params.unit_tests_directory, params.unit_tests_name, '260.java')
     print asdf
-    unit_tests = SymbolicUnitTests(params.package, "./", "classes-to-analyze", asdf, "test1Class")
+    unit_tests = SymbolicUnitTests(params.package, "classes-to-analyze", asdf, ["test260Class"])
     # unit_tests = SymbolicUnitTests(params.package, params.root, params.listfile)
     unit_tests.generate_symbolized_unit_tests()
