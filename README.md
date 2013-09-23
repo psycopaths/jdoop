@@ -1,8 +1,24 @@
 # Introduction
 
-JPF-Doop is a testing tool for Java libraries. It is based on the Java
-PathFinder's concolic execution engine [jDART][0] and [Randoop][1], a
-feedback-directed random testing engine.
+JPF-Doop is a testing tool for Java libraries. It is based on the
+[Java PathFinder][8]'s concolic execution engine [jDART][0] and
+[Randoop][1], a feedback-directed random testing engine.
+
+# Dependencies
+
+JPF-Doop includes a few tools that ship independently of JPF-Doop, but
+they are included in the JPF-Doop distribution for user's
+convenience. Those are [JaCoCo][6], [JUnit][7] version 4, and
+[Randoop][1].
+
+The following need to be obtained and configured by the user:
+
+* [Java PathFinder][8],
+* Java PathFinder's [jDART][0],
+* [Python][3], version 2.7
+
+If the user wishes to generate code coverage reports, [Apache Ant][4]
+is needed too.
 
 # Installation and Configuration
 
@@ -74,7 +90,20 @@ JPF-Doop uses a configuration file. By default, it is
 `[jpfdoop]`, `[sut]`, `[tests]`, and `[lib]`. For an example, see the
 contents of `jpfdoop.ini`.
 
-Section `[jpfdoop]` has two options.
+Section `[jpfdoop]` has two options. Option `jpf-core` specifies a
+path to Java PathFinder (core module), while option `jpf-jdart`
+specifies a path to Java PathFinder's jDART.
+
+Section `[sut]` has one option: `compilation-directory` specifies a
+directory where class files of the package being tested can be found.
+
+Section `[tests]` has one option: `compilation-directory` specifies
+a directory where should generated JUnit tests be compiled to.
+
+Section `[lib]` has three options that specify where various libraries
+can be found. Option `junit` is a path to a JUnit *jar*
+archive. Option `randoop` is a path to a Randoop *jar*
+archive. Finally, option `jacoco` is a path to a JaCoCo *jar* archive.
 
 
 # Generating code coverage reports
@@ -119,3 +148,5 @@ directory.
 [4]: https://ant.apache.org/
 [5]: http://dimjasevic.net/marko/wp-content/uploads/2013/09/jpf-workshop-2013.pdf
 [6]: http://www.eclemma.org/jacoco/
+[7]: http://junit.org/
+[8]: http://babelfish.arc.nasa.gov/trac/jpf/wiki
