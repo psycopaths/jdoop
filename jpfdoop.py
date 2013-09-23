@@ -516,11 +516,11 @@ if __name__ == "__main__":
     jpfdoop.start_clock("program")
 
     parser = argparse.ArgumentParser(description='Generates unit tests with Randoop only or with JPF-Doop.')
-    parser.add_argument('--packagename', required=True, help='A Java package with classes to analyze.')
+    parser.add_argument('--package-name', required=True, help='A Java package with classes to analyze.')
     parser.add_argument('--root', required=True, help='source files root directory')
     parser.add_argument('--classlist', default='classlist.txt', help='Name of a file to write a file list to')
     parser.add_argument('--timelimit', default=120, type=int, help='Timelimit in seconds in which JPF-Doop should finish its execution')
-    parser.add_argument('--conffile', default='jpfdoop.ini', help='A configuration file with settings for JPF-Doop')
+    parser.add_argument('--configuration-file', default='jpfdoop.ini', help='A configuration file with settings for JPF-Doop')
     parser.add_argument('--randoop-only', default=False, action="store_true", help='The tool should run Randoop only')
     parser.add_argument('--baseline', default=False, action="store_true", help='The tool should run in the baseline mode')
     parser.add_argument('--generate-report', default=False, action="store_true", help='The tool should generate a code coverage report once it finishes its execution')
@@ -528,8 +528,8 @@ if __name__ == "__main__":
 
     have_to_finish_by = jpfdoop.get_clock_starting_time("program") + params.timelimit
 
-    jpfdoop.read_config_file(params.conffile)
-    jpfdoop.paths.package_path = os.path.normpath(params.packagename.replace(".", "/"))
+    jpfdoop.read_config_file(params.configuration_file)
+    jpfdoop.paths.package_path = os.path.normpath(params.package_name.replace(".", "/"))
     jpfdoop.randoop_only = params.randoop_only
     jpfdoop.baseline = params.baseline
 

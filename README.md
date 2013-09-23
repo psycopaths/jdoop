@@ -4,13 +4,14 @@ JPF-Doop is a testing tool for Java libraries. It is based on the Java
 PathFinder's concolic execution engine [jDART][0] and [Randoop][1], a
 feedback-directed random testing engine.
 
-# Setting up
+# Installation and Configuration
 
 After you've cloned the repository, you can configure various
 parameters in `jpfdoop.ini`. Most importantly, change `jpf-core` and
 `jpf-jdart` in the `jpfdoop` section so that they point to the main
 directories of jpf-core and jpf-jdart, respectively. Do not use `~` as
-a shorthand for your home directory.
+a shorthand for your home directory. JPF-Doop needs version 6 of
+`jpf-core` and `jpf-jdart`.
 
 # Usage
 
@@ -30,12 +31,39 @@ $ python jpfdoop.py --package org.apache.commons.collections --root ../jpf-doop-
 A code coverage report will be generated and can be found in the
 `jacoco-site/` directory.
 
-For further instructions on how to use JPF-Doop, run:
+For further information on how to use JPF-Doop, you can run:
 
 ```
 #!bash
 $ python jpfdoop.py --help
 ```
+
+## Command line parameters
+
+JPF-Doop has several command line parameters:
+
+* `--package-name` - a required parameter with the name of a package
+  you want to test (e.g. `org.apache.commons.collections`).
+* `--root` - a required parameter with a directory where source files
+  of the package are.
+* `--classlist` - an optional parameter (with the default value
+  `classlist.txt`) where a list of classes will be written to.
+* `--timelimit`- an optional parameter (with the default value `120`)
+  with a time limit for JPF-Doop, in seconds.
+* `--configuration-file` - an optional parameter (with the default
+  value `jpfdoop.ini`) with a name of a configuration file in the INI
+  file format.
+* `--randoop-only` - an optional parameter (with the default value
+  false) that specifies if only Randoop should be executed.
+* `--baseline` - an optional parameter (with the default value false)
+  that specifies if only baseline JPF-Doop should be executed. For
+  information on the baseline solution, see an [extended abstract](5)
+  on JPF-Doop.
+* `--generate-report` - an optional parameter (with the default value
+  false) that specifies if a code coverage report should be generated
+  once JPF-Doop is done with its execution. If the parameter is
+  provided, [JaCoCo](6) will be executed to generate a code coverage
+  report for JUnit tests that JPF-Doop generated.
 
 # Generating code coverage reports
 
@@ -77,3 +105,5 @@ directory.
 [2]: https://bitbucket.org/psycopaths/jpf-doop-examples
 [3]: http://python.org
 [4]: https://ant.apache.org/
+[5]: http://dimjasevic.net/marko/wp-content/uploads/2013/09/jpf-workshop-2013.pdf
+[6]: http://www.eclemma.org/jacoco/
