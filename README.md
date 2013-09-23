@@ -15,7 +15,7 @@ The following need to be obtained and configured by the user:
 
 * [Java PathFinder][8],
 * Java PathFinder's [jDART][0],
-* [Python][3], version 2.7
+* [Python][3], version 2.7.
 
 If the user wishes to generate code coverage reports, [Apache Ant][4]
 is needed too.
@@ -26,8 +26,31 @@ After you've cloned the repository, you can configure various
 parameters in `jpfdoop.ini`. Most importantly, change `jpf-core` and
 `jpf-jdart` in the `jpfdoop` section so that they point to the main
 directories of jpf-core and jpf-jdart, respectively. Do not use `~` as
-a shorthand for your home directory. JPF-Doop needs version 6 of
-`jpf-core` and `jpf-jdart`.
+a shorthand for your home directory. JPF-Doop needs version 6 of Java
+PathFinder (core module) and jDART.
+
+## Configuration file
+
+JPF-Doop uses a configuration file. By default, it is
+`jpfdoop.ini`. The file is in the INI file format. It has 4 sections:
+`[jpfdoop]`, `[sut]`, `[tests]`, and `[lib]`. For an example, see the
+contents of `jpfdoop.ini`.
+
+Section `[jpfdoop]` has two options. Option `jpf-core` specifies a
+path to Java PathFinder (core module), while option `jpf-jdart`
+specifies a path to Java PathFinder's jDART.
+
+Section `[sut]` has one option: `compilation-directory` specifies a
+directory where class files of the package being tested can be found.
+
+Section `[tests]` has one option: `compilation-directory` specifies
+a directory where should generated JUnit tests be compiled to.
+
+Section `[lib]` has three options that specify where various libraries
+can be found. Option `junit` is a path to a JUnit *jar*
+archive. Option `randoop` is a path to a Randoop *jar*
+archive. Finally, option `jacoco` is a path to a JaCoCo *jar* archive.
+
 
 # Usage
 
@@ -82,29 +105,6 @@ JPF-Doop has several command line parameters:
   once JPF-Doop is done with its execution. If the parameter is
   provided, [JaCoCo][6] will be executed to generate a code coverage
   report for JUnit tests that JPF-Doop generated.
-
-## Configuration file
-
-JPF-Doop uses a configuration file. By default, it is
-`jpfdoop.ini`. The file is in the INI file format. It has 4 sections:
-`[jpfdoop]`, `[sut]`, `[tests]`, and `[lib]`. For an example, see the
-contents of `jpfdoop.ini`.
-
-Section `[jpfdoop]` has two options. Option `jpf-core` specifies a
-path to Java PathFinder (core module), while option `jpf-jdart`
-specifies a path to Java PathFinder's jDART.
-
-Section `[sut]` has one option: `compilation-directory` specifies a
-directory where class files of the package being tested can be found.
-
-Section `[tests]` has one option: `compilation-directory` specifies
-a directory where should generated JUnit tests be compiled to.
-
-Section `[lib]` has three options that specify where various libraries
-can be found. Option `junit` is a path to a JUnit *jar*
-archive. Option `randoop` is a path to a Randoop *jar*
-archive. Finally, option `jacoco` is a path to a JaCoCo *jar* archive.
-
 
 # Generating code coverage reports
 
