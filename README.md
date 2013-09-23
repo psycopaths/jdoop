@@ -116,11 +116,11 @@ JPF-Doop has several command line parameters:
   `classlist.txt`) where the list of classes from the package will be
   written to.
 * `--timelimit`- an optional parameter (with the default value `120`)
-  with a time limit for JPF-Doop, in seconds. IF `--generate-report`
+  with a time limit for JPF-Doop, in seconds. If `--generate-report`
   is provided too, after the time limit is reached, JPF-Doop will
   compile generated JUnit tests and generate a code coverage
-  report. In other words, compilation and report generation are not
-  included in the time limit.
+  report. In other words, compilation and report generation execution
+  times are not included in the time limit.
 * `--configuration-file` - an optional parameter (with the default
   value `jpfdoop.ini`) with a name of a configuration file in the INI
   file format. More about options within the configuration file are
