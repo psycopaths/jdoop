@@ -13,8 +13,8 @@ convenience. Those are [JaCoCo][6], [JUnit][7] version 4, and
 
 The following need to be obtained and configured by the user:
 
-* [Java PathFinder][8],
-* Java PathFinder's [jDART][0],
+* [Java PathFinder][8] (version 6),
+* Java PathFinder's [jDART][0] (version 6),
 * [Python][3], version 2.7.
 
 If the user wishes to generate code coverage reports, [Apache Ant][4]
@@ -22,12 +22,17 @@ is needed too.
 
 # Installation and Configuration
 
-After you've cloned the repository, you can configure various
-parameters in `jpfdoop.ini`. Most importantly, change `jpf-core` and
-`jpf-jdart` in the `jpfdoop` section so that they point to the main
-directories of jpf-core and jpf-jdart, respectively. Do not use `~` as
-a shorthand for your home directory. JPF-Doop needs version 6 of Java
-PathFinder (core module) and jDART.
+After you've cloned the repository, there is no installation of
+JPF-Doop because it is comprised of scripts written in Python. In
+other words, you can run it as soon as you obtained a copy of JPF-Doop
+(and you have all the dependencies in place).
+
+You can configure various parameters in `jpfdoop.ini`. Most
+importantly, change `jpf-core` and `jpf-jdart` in the `jpfdoop`
+section so that they point to the main directories of jpf-core and
+jpf-jdart, respectively. Do not use `~` as a shorthand for your home
+directory. JPF-Doop needs version 6 of Java PathFinder (core module)
+and jDART.
 
 ## Configuration file
 
@@ -104,7 +109,9 @@ JPF-Doop has several command line parameters:
   false) that specifies if a code coverage report should be generated
   once JPF-Doop is done with its execution. If the parameter is
   provided, [JaCoCo][6] will be executed to generate a code coverage
-  report for JUnit tests that JPF-Doop generated.
+  report for JUnit tests that JPF-Doop generated. If this option is
+  not provided, the user can generate the code coverage report
+  herself, as described in section *Generating code coverage reports*.
 
 # Generating code coverage reports
 
