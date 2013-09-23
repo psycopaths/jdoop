@@ -24,7 +24,7 @@ is needed too.
 
 After you've cloned the repository, there is no installation of
 JPF-Doop because it is comprised of scripts written in Python. In
-other words, you can run it as soon as you obtained a copy of JPF-Doop
+other words, you can run JPF-Doop as soon as you obtained a copy of it
 (and you have all the dependencies in place).
 
 You can configure various parameters in `jpfdoop.ini`. Most
