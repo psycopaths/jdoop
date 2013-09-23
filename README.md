@@ -2,7 +2,10 @@
 
 JPF-Doop is a testing tool for Java libraries. It is based on the
 [Java PathFinder][8]'s concolic execution engine [jDART][0] and
-[Randoop][1], a feedback-directed random testing engine.
+[Randoop][1], a feedback-directed random testing engine. More detailed
+description of JPF-Doop can be found in an extended abstract by Marko
+Dimjašević and Zvonimir Rakamarić:
+[JPF-Doop: Combining Concolic and Random Testing for Java][5].
 
 # Dependencies
 
@@ -73,7 +76,9 @@ $ python jpfdoop.py --package org.apache.commons.collections --root ../jpf-doop-
 ```
 
 A code coverage report will be generated and can be found in the
-`jacoco-site/` directory.
+`jacoco-site/` directory. JPF-Doop will generate two formats of the
+report - HTML (to be found in `jacoco/site/html/index.html`) and XML
+(to be found in `jacoco-site/report.xml`).
 
 For further information on how to run JPF-Doop, you can execute:
 
