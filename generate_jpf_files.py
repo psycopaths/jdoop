@@ -38,8 +38,9 @@ class GenerateConfFile:
 
                 # Extract the method name
                 method_name = line.lstrip().split(" ")[2][:-2]
-                output_file.write("concolic.method.m%d=%s.%s.%s()" % (method_counter, self.package_name, class_name, method_name))
-                # print "concolic.method=%s.%s.%s()" % (self.package_name, class_name, method_name)
+                # output_file.write("concolic.method.m%d=%s.%s.%s()" % (method_counter, self.package_name, class_name, method_name))
+                print "concolic.method=%s" % method_name
+                print "concolic.method.%s=%s.%s.%s()" % (method_name, self.package_name, class_name, method_name)
                 method_counter += 1
 
             output_file.write("\n")
@@ -47,6 +48,7 @@ class GenerateConfFile:
             output_file.write("\n")
             output_file.write("shell=gov.nasa.jpf.jdart.JDart\n")
             output_file.write("symbolic.dp=NativeZ3\n")
+            output_file.write("jdart.configs.all_fields_symbolic.symbolic.include=this.*\n")
             output_file.write("\n")
 
             # possible log levels: servere, warning, info, config, fine,
