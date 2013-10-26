@@ -112,7 +112,7 @@ class JPFDoop:
         pass
         self.paths = Paths()
         self.clock = {}
-        self.concrete_values_temporary_file = 'concrete-values-tmp.txt'
+        self.concrete_values_temporary_file = 'concrete-values-jdart.txt'
 
         self.concrete_values_all_runs = sets.Set()
         self.concrete_values_all_runs_stats = []

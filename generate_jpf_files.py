@@ -38,11 +38,12 @@ class GenerateConfFile:
 
                 # Extract the method name
                 method_name = line.lstrip().split(" ")[2][:-2]
-                # output_file.write("concolic.method.m%d=%s.%s.%s()" % (method_counter, self.package_name, class_name, method_name))
-                print "concolic.method=%s" % method_name
-                print "concolic.method.%s=%s.%s.%s()" % (method_name, self.package_name, class_name, method_name)
+                output_file.write("concolic.method=%s\n" % method_name)
+                output_file.write("concolic.method.%s=%s.%s.%s()\n" % (method_name, self.package_name, class_name, method_name))
                 method_counter += 1
 
+            output_file.write("\n")
+            output_file.write("concolic.values_file=%s\n" % "concrete-values-jdart.txt")
             output_file.write("\n")
             output_file.write("classpath+=,%s\n" % self.classpath)
             output_file.write("\n")

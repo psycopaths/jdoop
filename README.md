@@ -16,8 +16,8 @@ convenience. Those are [JaCoCo][6], [JUnit][7] version 4, and
 
 The following need to be obtained and configured by the user:
 
-* [Java PathFinder][8] (version 6),
-* Java PathFinder's [jDART][0] (version 6),
+* [Java PathFinder][8],
+* Java PathFinder's [jDART][0],
 * [Python][3], version 2.7.
 
 If the user wishes to generate code coverage reports, [Apache Ant][4]
@@ -34,8 +34,7 @@ You can configure various parameters in `jpfdoop.ini`. Most
 importantly, change `jpf-core` and `jpf-jdart` in the `jpfdoop`
 section so that they point to the main directories of jpf-core and
 jpf-jdart, respectively. Do not use `~` as a shorthand for your home
-directory. JPF-Doop needs version 6 of Java PathFinder (core module)
-and jDART.
+directory.
 
 ## Configuration file
 
