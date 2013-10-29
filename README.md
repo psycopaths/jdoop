@@ -178,7 +178,7 @@ directory.
 [2]: https://bitbucket.org/psycopaths/jpf-doop-examples
 [3]: http://python.org
 [4]: https://ant.apache.org/
-[5]: http://dimjasevic.net/marko/wp-content/uploads/2013/09/jpf-workshop-2013.pdf
+[5]: http://dimjasevic.net/marko/wp-content/uploads/2013/10/jpf-workshop-2013.pdf
 [6]: http://www.eclemma.org/jacoco/
 [7]: http://junit.org/
 [8]: http://babelfish.arc.nasa.gov/trac/jpf/wiki
