@@ -173,6 +173,13 @@ The `report.py` script will generate a code coverage report in two
 formats - HTML and XML. Both can be found in a `jacoco-site/`
 directory.
 
+# Emulab
+
+To thoroughly evaluate JPF-Doop, we have been using [Emulab][9], a
+network testbed developed and provided by the
+[Flux Research Group][10] at the University of Utah.
+
+
 [0]: https://bitbucket.org/psycopaths/jpf-jdart
 [1]: https://code.google.com/p/randoop/
 [2]: https://bitbucket.org/psycopaths/jpf-doop-examples
@@ -182,3 +189,5 @@ directory.
 [6]: http://www.eclemma.org/jacoco/
 [7]: http://junit.org/
 [8]: http://babelfish.arc.nasa.gov/trac/jpf/wiki
+[9]: http://www.emulab.net/
+[10]: http://www.flux.utah.edu/
