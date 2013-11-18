@@ -99,6 +99,24 @@ class RandoopRun:
 
         additional_params += " --forbid-null=false --small-tests=true --testsperfile=1 --check-object-contracts=false"
 
+        # Output generated tests in a serialized form so that they can
+        # be refused in later executions of Randoop
+
+        additional_params += " --output-components=" + self.unit_tests_directory + ".gz"
+
+        # Check if there were previous rounds and reuse serialized
+        # tests if so
+        if self.unit_tests_directory != "tests-round-1":
+            try:
+                round_number = int(self.unit_tests_directory[len("tests-round-"):])
+            except Exception, err:
+                print str(err)
+                sys.exit(1)
+
+            # Add to a pool all tests from all previous rounds
+            for no in range(1, round_number):
+                additional_params += " --componentfile-ser=tests-round-%d.gz" % no
+
         if self.dont_terminate:
             command = Command(args = "java $JVM_FLAGS -ea -cp " + ":".join([self.paths.lib_randoop, self.paths.lib_junit, self.paths.sut_compilation_dir]) + " randoop.main.Main gentests --classlist=" + self.classlist_filename + " --junit-output-dir=" + self.unit_tests_directory + " --junit-classname=" + self.unit_tests_name + " --timelimit=%s" % self.unit_tests_timelimit + additional_params)
             command.run()
@@ -483,6 +501,8 @@ class JPFDoop:
                 # concrete values would be generated on average, so we
                 # will give much more time to Randoop than usual
                 default_time = 180 # seconds
+                if have_to_finish_by - current_time > 660: # 11 minutes
+                    default_time = 660
             else:
                 default_time = 45 # seconds
 
@@ -573,55 +593,56 @@ if __name__ == "__main__":
 
         i += 1
 
-        if not params.randoop_only:
-            # Symbolize unit tests
-            jpfdoop.start_clock("Symbolization of unit tests #%d" % (i-1))
-            # TODO: Vary number of unit tests to select based on
-            # previous performance
-            jpfdoop.symbolize_unit_tests(unit_tests, count = 30)
-            jpfdoop.stop_clock("Symbolization of unit tests #%d" % (i-1))
+        # if not params.randoop_only:
+        # Symbolize unit tests
+        jpfdoop.start_clock("Symbolization of unit tests #%d" % (i-1))
+        # TODO: Vary number of unit tests to select based on
+        # previous performance
+        jpfdoop.symbolize_unit_tests(unit_tests, count = 30)
+        jpfdoop.stop_clock("Symbolization of unit tests #%d" % (i-1))
 
-            # Generate JPF configuration files
-            jpfdoop.generate_jpf_conf(unit_tests, params.root)
+        # Generate JPF configuration files
+        jpfdoop.generate_jpf_conf(unit_tests, params.root)
 
-            # Compile symbolized unit tests
-            jpfdoop.start_clock("Compilation of symbolic unit tests #%d" % (i-1))
-            jpfdoop.compile_symbolic_tests(params.root, unit_tests)
-            jpfdoop.stop_clock("Compilation of symbolic unit tests #%d" % (i-1))
+        # Compile symbolized unit tests
+        jpfdoop.start_clock("Compilation of symbolic unit tests #%d" % (i-1))
+        jpfdoop.compile_symbolic_tests(params.root, unit_tests)
+        jpfdoop.stop_clock("Compilation of symbolic unit tests #%d" % (i-1))
 
-            # Run JDart on symbolized unit tests
-            timelimit = jpfdoop.determine_timelimit("JDart")
+        # Run JDart on symbolized unit tests
+        timelimit = jpfdoop.determine_timelimit("JDart")
 
-            jpfdoop.start_clock("Global run of JDart #%d" % (i-1))
-            jpfdoop.run_jdart(unit_tests, params.root, classlist, jpfdoop.paths.package_path, timelimit)
-            jpfdoop.stop_clock("Global run of JDart #%d" % (i-1))
-
-        unit_tests = UnitTests(name = "Randoop%dTest" % i, directory = "tests-round-%d" % i, randooped_package_name = "randooped%d" % i)
+        jpfdoop.start_clock("Global run of JDart #%d" % (i-1))
+        jpfdoop.run_jdart(unit_tests, params.root, classlist, jpfdoop.paths.package_path, timelimit)
+        jpfdoop.stop_clock("Global run of JDart #%d" % (i-1))
 
         # Run Randoop
         timelimit = jpfdoop.determine_timelimit("Randoop", i)
-        jpfdoop.start_clock("Randoop #%d" % i)
-        if params.randoop_only:
-            jpfdoop.run_randoop(unit_tests, classlist, timelimit, dont_terminate = True)
-        else:
-            jpfdoop.run_randoop(unit_tests, classlist, timelimit, dont_terminate = True, use_concrete_values = True)
-        jpfdoop.stop_clock("Randoop #%d" % i)
+        if timelimit > 3:
+            unit_tests = UnitTests(name = "Randoop%dTest" % i, directory = "tests-round-%d" % i, randooped_package_name = "randooped%d" % i)
 
-        # Split up the main unit test suite class if needed. With 1 unit
-        # test per class, there are too many calls from the main class to
-        # fit into the 64K bytecode size limit
-        #
-        new_unit_tests = jpfdoop.check_and_split_up_suite(unit_tests)
+            jpfdoop.start_clock("Randoop #%d" % i)
+            if params.randoop_only:
+                jpfdoop.run_randoop(unit_tests, classlist, timelimit, dont_terminate = True)
+            else:
+                jpfdoop.run_randoop(unit_tests, classlist, timelimit, dont_terminate = True, use_concrete_values = True)
+            jpfdoop.stop_clock("Randoop #%d" % i)
 
-        # Compile tests generated by Randoop
-        # if params.generate_report:
-        #     jpfdoop.compile_tests(new_unit_tests)
+            # Split up the main unit test suite class if needed. With 1 unit
+            # test per class, there are too many calls from the main class to
+            # fit into the 64K bytecode size limit
+            #
+            new_unit_tests = jpfdoop.check_and_split_up_suite(unit_tests)
 
-        # unit_tests_list.extend([ut.name for ut in new_unit_tests])
-        unit_tests_list.extend(new_unit_tests)
+            # Compile tests generated by Randoop
+            # if params.generate_report:
+            #     jpfdoop.compile_tests(new_unit_tests)
+
+            # unit_tests_list.extend([ut.name for ut in new_unit_tests])
+            unit_tests_list.extend(new_unit_tests)
 
         # Check if we're out of time and break out of the loop if so
-        if time.time() >= have_to_finish_by:
+        if time.time() >= have_to_finish_by - 3:
             break
 
         # If we are in the baseline mode, no further iterations should
