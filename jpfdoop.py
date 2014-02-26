@@ -33,7 +33,7 @@ class ClassList:
 
         ret = []
         
-        for dirpath, dirnames, filenames in os.walk(os.path.join(base, rootdir)):
+        for dirpath, dirnames, filenames in os.walk(os.path.join(base, "src/main/java")):
             for name in filenames:
                 if name.endswith('.java'):
                     # No need to worry about abstract classes nor
@@ -42,7 +42,8 @@ class ClassList:
 
                     # Check if this is a meta-package
                     if not name.startswith('package-info'):
-                        ret.append(dirpath[len(os.path.normpath(base)) + 1:].replace("/", ".") + "." + name[:-len(".java")])
+                        ret.append(dirpath[len(os.path.normpath(base)) + 1 + len("src/main/java/"):].replace("/", ".") + "." + name[:-len(".java")])
+                        print "dirpath = %s, dirname = %s, name = %s" % (str(dirpath), str(dirnames), str(name))
 
         self.list_of_classes = ret
 
@@ -118,11 +119,15 @@ class RandoopRun:
             for no in range(1, round_number):
                 additional_params += " --componentfile-ser=tests-round-%d.gz" % no
 
+        print "Running Randoop with the following command:"
+        print "java $JVM_FLAGS -ea -cp " + ":".join([self.paths.lib_randoop, self.paths.lib_junit, self.paths.sut_compilation_dir, self.paths.sut_dependencies]) + " randoop.main.Main gentests --classlist=" + self.classlist_filename + " --junit-output-dir=" + self.unit_tests_directory + " --junit-classname=" + self.unit_tests_name + " --timelimit=%s" % self.unit_tests_timelimit + additional_params
+        sys.stdout.flush()
+
         if self.dont_terminate:
-            command = Command(args = "java $JVM_FLAGS -ea -cp " + ":".join([self.paths.lib_randoop, self.paths.lib_junit, self.paths.sut_compilation_dir]) + " randoop.main.Main gentests --classlist=" + self.classlist_filename + " --junit-output-dir=" + self.unit_tests_directory + " --junit-classname=" + self.unit_tests_name + " --timelimit=%s" % self.unit_tests_timelimit + additional_params)
+            command = Command(args = "java $JVM_FLAGS -ea -cp " + ":".join([self.paths.lib_randoop, self.paths.lib_junit, self.paths.sut_compilation_dir, self.paths.sut_dependencies]) + " randoop.main.Main gentests --classlist=" + self.classlist_filename + " --junit-output-dir=" + self.unit_tests_directory + " --junit-classname=" + self.unit_tests_name + " --timelimit=%s" % self.unit_tests_timelimit + additional_params)
             command.run()
         else:
-            command = CommandWithTimeout(args = "java $JVM_FLAGS -ea -cp " + ":".join([self.paths.lib_randoop, self.paths.lib_junit, self.paths.sut_compilation_dir]) + " randoop.main.Main gentests --classlist=" + self.classlist_filename + " --junit-output-dir=" + self.unit_tests_directory + " --junit-classname=" + self.unit_tests_name + " --timelimit=%s" % self.unit_tests_timelimit + additional_params)
+            command = CommandWithTimeout(args = "java $JVM_FLAGS -ea -cp " + ":".join([self.paths.lib_randoop, self.paths.lib_junit, self.paths.sut_compilation_dir, self.paths.sut_dependencies]) + " randoop.main.Main gentests --classlist=" + self.classlist_filename + " --junit-output-dir=" + self.unit_tests_directory + " --junit-classname=" + self.unit_tests_name + " --timelimit=%s" % self.unit_tests_timelimit + additional_params)
             command.run(timeout = int(int(self.unit_tests_timelimit) * 1.1 + 10))
 
 
@@ -164,6 +169,13 @@ class JPFDoop:
         except Exception, err:
             print str(err) + " in " + config_file_name
             sys.exit(1)
+
+        # fetch library dependencies (if any)
+        self.paths.sut_dependencies = ""
+        try:
+            self.paths.sut_dependencies = str(config.get('sut', 'dependency-directory'))
+        except:
+            pass
 
 
     def run_randoop(self, unit_tests, classlist, timelimit, dont_terminate = False, use_concrete_values = False, randoop_threads = 10):
@@ -241,7 +253,7 @@ class JPFDoop:
             pass
 
         for unit_tests_suite in unit_tests:
-            compile_tests_command = Command(args = "javac -g -d " + self.paths.tests_compilation_dir + " -classpath " + ":".join([self.paths.sut_compilation_dir, self.paths.lib_junit]) + " " + unit_tests_suite.directory + "/*java")
+            compile_tests_command = Command(args = "javac -g -d " + self.paths.tests_compilation_dir + " -classpath " + ":".join([self.paths.sut_compilation_dir, self.paths.lib_junit, self.paths.sut_dependencies]) + " " + unit_tests_suite.directory + "/*java")
             compile_tests_command.run()
 
         # if self.randoop_only:
@@ -262,7 +274,7 @@ class JPFDoop:
         except:
             pass
 
-        compile_tests_command = Command(args = "javac -g -d " + self.paths.tests_compilation_dir + " -classpath " + ":".join([os.path.join(self.jpf_jdart_path, "build"), os.path.join(self.jpf_jdart_path, "build/annotations/"), self.paths.sut_compilation_dir, self.paths.tests_compilation_dir, self.paths.lib_junit]) + " " + os.path.join("./", unit_tests.randooped_package_name +  "/*java"))
+        compile_tests_command = Command(args = "javac -g -d " + self.paths.tests_compilation_dir + " -classpath " + ":".join([os.path.join(self.jpf_jdart_path, "build"), os.path.join(self.jpf_jdart_path, "build/annotations/"), self.paths.sut_compilation_dir, self.paths.tests_compilation_dir, self.paths.lib_junit, self.paths.sut_dependencies]) + " " + os.path.join("./", unit_tests.randooped_package_name +  "/*java"))
         compile_tests_command.run()
 
 

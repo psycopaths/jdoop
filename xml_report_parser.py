@@ -34,5 +34,5 @@ class xml_report_parser:
 
 if __name__ == "__main__":
     parser = xml_report_parser(sys.argv[1])
-    print parser.branch_coverage()
-    print parser.instruction_coverage()
+    print "Branch:      " + str(parser.branch_coverage())
+    print "Instruction: " + str(parser.instruction_coverage())
