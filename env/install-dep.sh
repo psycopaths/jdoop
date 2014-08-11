@@ -119,6 +119,6 @@ if [ ${INSTALL_JPF_JDART} -eq 1 ]; then
     ant
 
     echo "jpf-jdart = $JDART_DIR" >> $JPF_CONF_FILE
-    echo "extensions=${jpf-core},${jpf-jdart},${jconstraints}" >> $JPF_CONF_FILE
+    echo "extensions=\${jpf-core},\${jpf-jdart},\${jconstraints}" >> $JPF_CONF_FILE
 
 fi
