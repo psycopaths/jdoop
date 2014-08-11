@@ -181,7 +181,7 @@ network testbed developed and provided by the
 
 
 [0]: https://bitbucket.org/psycopaths/jpf-jdart
-[1]: https://code.google.com/p/randoop/
+[1]: https://bitbucket.org/psycopaths/randoop
 [2]: https://bitbucket.org/psycopaths/jpf-doop-examples
 [3]: http://python.org
 [4]: https://ant.apache.org/

@@ -1,6 +1,7 @@
 # A class that extracts branch and instruction coverage from a JaCoCo
 # code coverage XML report
 
+import sys
 from BeautifulSoup import BeautifulStoneSoup
 
 class xml_report_parser:
@@ -21,6 +22,7 @@ class xml_report_parser:
             if counter_attrs[u'type'] == type:
                 ret['covered'] = int(counter_attrs[u'covered'])
                 ret['total'] = ret['covered'] + int(counter_attrs[u'missed'])
+                break
 
         return ret
 
@@ -31,6 +33,6 @@ class xml_report_parser:
         return self.find_counter(u'INSTRUCTION')
 
 if __name__ == "__main__":
-    parser = xml_report_parser("jacoco-site/report.xml")
+    parser = xml_report_parser(sys.argv[1])
     print parser.branch_coverage()
     print parser.instruction_coverage()
