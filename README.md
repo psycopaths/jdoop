@@ -28,7 +28,10 @@ is needed too.
 After you've cloned the repository, there is no installation of
 JPF-Doop because it is comprised of scripts written in Python. In
 other words, you can run JPF-Doop as soon as you obtained a copy of it
-(and you have all the dependencies in place).
+(and you have all the dependencies in place). In order to have all
+JPF-Doop dependencies easily installed, you might want to take a look
+at an installation script [install-dep.sh](env/install-dep.sh) and
+possibly tweak a few parameters at the very top of the script.
 
 You can configure various parameters in `jpfdoop.ini`. Most
 importantly, change `jpf-core` and `jpf-jdart` in the `jpfdoop`
