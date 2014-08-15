@@ -22,13 +22,13 @@ JPF_DIR=$PROJECTS_ROOT/jpf
 if [ ${INSTALL_PACKAGES} -eq 1 ]; then
 
     # this is for Ubuntu 12.04 x86-64 on Emulab
-    echo 'linux-firmware hold' | dpkg --set-selections
-    echo 'grub-common hold' | dpkg --set-selections
-    echo 'grub-pc hold' | dpkg --set-selections
-    echo 'grub-pc-bin hold' | dpkg --set-selections
-    echo 'grub2-common hold' | dpkg --set-selections
-    echo 'linux-headers-2.6.38.7-1.0emulab hold' | dpkg --set-selections
-    echo 'linux-image-2.6.38.7-1.0emulab hold' | dpkg --set-selections
+    echo 'linux-firmware hold' | sudo dpkg --set-selections
+    echo 'grub-common hold' | sudo dpkg --set-selections
+    echo 'grub-pc hold' | sudo dpkg --set-selections
+    echo 'grub-pc-bin hold' | sudo dpkg --set-selections
+    echo 'grub2-common hold' | sudo dpkg --set-selections
+    echo 'linux-headers-2.6.38.7-1.0emulab hold' | sudo dpkg --set-selections
+    echo 'linux-image-2.6.38.7-1.0emulab hold' | sudo dpkg --set-selections
     
     sudo apt-get update
     sudo apt-get install -y htop screen tree mercurial ant ant-optional openjdk-7-jre openjdk-7-jre-headless openjdk-7-jre-lib openjdk-7-jdk antlr3 libguava-java python maven
