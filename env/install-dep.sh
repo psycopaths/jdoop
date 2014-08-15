@@ -49,7 +49,7 @@ if [ ${INSTALL_Z3} -eq 1 ]; then
     cd build
     make -j32 all
     sudo make install
-    cp $Z3_DIR/build/libz3java.so /usr/lib/
+    sudo cp $Z3_DIR/build/libz3java.so /usr/lib/
     
     mvn install:install-file -Dfile=com.microsoft.z3.jar -DgroupId=com.microsoft -DartifactId=z3 -Dversion=0.9 -Dpackaging=jar
 
