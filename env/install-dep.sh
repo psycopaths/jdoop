@@ -6,119 +6,133 @@
 # Exit on error
 set -e
 
-PROJECTS_ROOT=/mnt/storage/projects
+project_root_dir=/mnt/storage/jdart-project
 
 # Set these flags to control what to install
-INSTALL_PACKAGES=1
-INSTALL_Z3=1
-INSTALL_JPF_CORE=1
-INSTALL_JPF_JDART=1
+install_packages=1
+install_z3=1
+install_jpf_core=1
+install_jdart=1
 
 # Directories
-Z3_DIR=$PROJECTS_ROOT/z3
-JPF_DIR=$PROJECTS_ROOT/jpf
+z3_dir=$project_root_dir/z3
 
 
-if [ ${INSTALL_PACKAGES} -eq 1 ]; then
+if [ ${install_packages} -eq 1 ]; then
 
-    # this is for Ubuntu 12.04 x86-64 on Emulab
-    echo 'linux-firmware hold' | sudo dpkg --set-selections
+    # Make sure Debian backports are enabled. This is needed for Java
+    # 8 packages
+    apt_source_file=/etc/apt/sources.list.d/debian-backports.list
+    sudo su -c "echo 'deb http://mirrors.kernel.org/debian jessie-backports main' >> ${apt_source_file}"
+    sudo su -c "echo 'deb-src http://mirrors.kernel.org/debian jessie-backports main' >> ${apt_source_file}"
+    
+    # This is for Debian 8 (Jessie) x86-64 on Emulab
+    echo 'firmware-linux-free hold' | sudo dpkg --set-selections
     echo 'grub-common hold' | sudo dpkg --set-selections
     echo 'grub-pc hold' | sudo dpkg --set-selections
     echo 'grub-pc-bin hold' | sudo dpkg --set-selections
     echo 'grub2-common hold' | sudo dpkg --set-selections
-    echo 'linux-headers-2.6.38.7-1.0emulab hold' | sudo dpkg --set-selections
-    echo 'linux-image-2.6.38.7-1.0emulab hold' | sudo dpkg --set-selections
+    echo 'linux-headers-3.2.0-4-all-amd64 hold' | sudo dpkg --set-selections
+    echo 'linux-image-amd64 hold' | sudo dpkg --set-selections
+    echo 'linux-image-3.16.0-4-amd64 hold' | sudo dpkg --set-selections
     
     sudo apt-get update
-    sudo apt-get install -y htop screen tree mercurial ant ant-optional openjdk-7-jre openjdk-7-jre-headless openjdk-7-jre-lib openjdk-7-jdk antlr3 libguava-java python maven
+    dependencies="htop screen tree git mercurial ant ant-optional openjdk-8-jre openjdk-8-jre-headless openjdk-8-jdk antlr3 libguava-java python maven"
+    sudo apt-get install --assume-yes $dependencies
 
+    # Set Java 8 as the default Java version
+    sudo update-alternatives --set java  /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+    sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
+fi
+
+# Make sure Java 8 is the default version
+java_version=`java -version 2>&1 | grep "version" | awk -F"\"" '{print $2}' | awk -F"\." '{print $1"."$2}'`
+if [ "${java_version}" != "1.8" ]; then
+    echo "Error: Java 8 must be set as the default Java version" >&2
+    exit 1
+fi
+javac_version=`javac -version 2>&1 | awk -F" " '{print $2}' | awk -F"\." '{print $1"."$2}'`
+if [ "${javac_version}" != "1.8" ]; then
+    echo "Error: Java compiler 8 must be set as the default Java version" >&2
+    exit 1
 fi
 
 # Install Z3
 
-if [ ${INSTALL_Z3} -eq 1 ]; then
+if [ ${install_z3} -eq 1 ]; then
 
-    mkdir -p $Z3_DIR
-    cd $Z3_DIR
-    wget "http://download-codeplex.sec.s-msft.com/Download/SourceControlFileDownload.ashx?ProjectName=z3&changeSetId=0df0174d6216a9cbaeb1dab0443e9a626ec5dddb"
-    unzip -o SourceControlFileDownload*
-    rm -f SourceControlFileDownload*
-
+    mkdir -p ${z3_dir}
+    cd ${project_root_dir}
+    z3_archive=z3-4.4.1.tar.gz
+    wget https://github.com/Z3Prover/z3/archive/${z3_archive}
+    tar xf ${z3_archive} --strip-components 1 --directory ${z3_dir}
+    rm ${z3_archive}
+    cd ${z3_dir}
+    
     python scripts/mk_make.py --java
     cd build
     make -j32 all
     sudo make install
-    sudo cp $Z3_DIR/build/libz3java.so /usr/lib/
-    
-    mvn install:install-file -Dfile=com.microsoft.z3.jar -DgroupId=com.microsoft -DartifactId=z3 -Dversion=0.9 -Dpackaging=jar
 
+    mvn install:install-file -Dfile=com.microsoft.z3.jar -DgroupId=com.microsoft -DartifactId=z3 -Dversion=0.9 -Dpackaging=jar
 fi
 
 # Install JPF modules
 # JPF configuration directory
 
-if [ ${INSTALL_JPF_CORE} -eq 1 ] || [ ${INSTALL_JPF_JDART} -eq 1 ]; then
+if [ ${install_jpf_core} -eq 1 ] || [ ${install_jdart} -eq 1 ]; then
 
-    JPF_CONF_DIR=$JPF_DIR/.jpf
-    mkdir -p $JPF_CONF_DIR
-    ln -s $JPF_CONF_DIR ~/.jpf
-    JPF_CONF_FILE=$JPF_CONF_DIR/site.properties
-
+    jpf_conf_dir=${project_root_dir}/.jpf
+    mkdir -p $jpf_conf_dir
+    ln -s ${jpf_conf_dir}/ ~/.jpf || true
+    jpf_conf_file=~/.jpf/site.properties
 fi
 
 
-if [ ${INSTALL_JPF_CORE} -eq 1 ]; then
+if [ ${install_jpf_core} -eq 1 ]; then
 
     # Install jpf-core
-    JPF_CORE_DIR=$JPF_DIR/jpf-core
-    hg clone http://babelfish.arc.nasa.gov/hg/jpf/jpf-core $JPF_CORE_DIR
-    cd $JPF_CORE_DIR
-    # Revert to a commit we are sure works with JPF-Doop
-    hg update -r 1192
+    jpf_core_dir=${project_root_dir}/jpf-core
+    hg clone http://babelfish.arc.nasa.gov/hg/jpf/jpf-core ${jpf_core_dir}
+    cd ${jpf_core_dir}
+    # Revert to a commit we are sure works with JDoop
+    hg update -r 29
     ant
 
-    echo "jpf-core = $JPF_CORE_DIR" >> $JPF_CONF_FILE
-
+    echo "jpf-core = ${jpf_core_dir}" >> ${jpf_conf_file}
 fi
 
 
-if [ ${INSTALL_JPF_JDART} -eq 1 ]; then
-
-    # Install jconstraints-z3
-    export LD_LIBRARY_PATH=/usr/lib
-    JCONST_Z3_DIR=$JPF_DIR/jconstraints-z3
-    hg clone ssh://hg@bitbucket.org/psycopaths/jconstraints-z3 $JCONST_Z3_DIR
-    cd $JCONST_Z3_DIR
-    # Revert to a commit we are sure works with JPF-Doop
-    hg update -r 9
-    mvn install
-
-    JCONST_CONF_DIR=$JPF_DIR/.jconstraints
-    mkdir -p $JCONST_CONF_DIR/extensions
-    ln -s $JCONST_CONF_DIR ~/.jconstraints
-    cp target/jConstraints-z3-1.0-SNAPSHOT.jar ~/.jconstraints/extensions
-    cp $Z3_DIR/build/com.microsoft.z3.jar ~/.jconstraints/extensions
+if [ ${install_jdart} -eq 1 ]; then
 
     # Install jconstraints
-    JCONST_DIR=$JPF_DIR/jconstraints
-    hg clone ssh://hg@bitbucket.org/psycopaths/jconstraints $JCONST_DIR
-    cd $JCONST_DIR
-    # Revert to a commit we are sure works with JPF-Doop
-    hg update -r 106
+    jconstraints_dir=${project_root_dir}/jconstraints
+    git clone https://github.com/psycopaths/jconstraints.git ${jconstraints_dir}
+    cd ${jconstraints_dir}
     mvn install
 
-    echo "jconstraints = $JCONST_DIR" >> $JPF_CONF_FILE
+    # Install jconstraints-z3
+    # export LD_LIBRARY_PATH=/usr/lib
+    jconstraints_z3_dir=${project_root_dir}/jconstraints-z3
+    git clone https://github.com/psycopaths/jconstraints-z3.git ${jconstraints_z3_dir}
+    cd ${jconstraints_z3_dir}
+    mvn install
 
-    # Install jDART
-    JDART_DIR=$JPF_DIR/jpf-jdart
-    hg clone ssh://hg@bitbucket.org/psycopaths/jpf-jdart $JDART_DIR
-    cd $JDART_DIR
-    # Revert to a commit we are sure works with JPF-Doop
-    hg update -r 226
+    jconstraints_conf_dir=${project_root_dir}/.jconstraints
+    mkdir -p ${jconstraints_conf_dir}/extensions
+    ln -s ${jconstraints_conf_dir} ~/.jconstraints || true
+    cp target/jConstraints-z3-1.0-SNAPSHOT.jar ~/.jconstraints/extensions
+    cp ${z3_dir}/build/com.microsoft.z3.jar ~/.jconstraints/extensions
+
+    echo "jconstraints = $jconstraints_dir" >> ${jpf_conf_file}
+
+    # Install JDart
+    jdart_dir=${project_root_dir}/jdart
+    git clone https://github.com/psycopaths/jdart.git ${jdart_dir}
+    cd ${jdart_dir}
     ant
 
-    echo "jpf-jdart = $JDART_DIR" >> $JPF_CONF_FILE
-    echo "extensions=\${jpf-core},\${jpf-jdart},\${jconstraints}" >> $JPF_CONF_FILE
+    echo "jpf-jdart = ${jdart_dir}" >> ${jpf_conf_file}
+    echo "extensions=\${jpf-core},\${jpf-jdart}" >> ${jpf_conf_file}
 
 fi
