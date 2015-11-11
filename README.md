@@ -1,23 +1,22 @@
 # Introduction
 
-JPF-Doop is a testing tool for Java libraries. It is based on the
-[Java PathFinder][8]'s concolic execution engine [jDART][0] and
+JDoop is a testing tool for Java libraries. It is based on the
+[Java PathFinder][8]'s concolic execution engine [JDart][0] and
 [Randoop][1], a feedback-directed random testing engine. More detailed
-description of JPF-Doop can be found in an extended abstract by Marko
+description of JDoop can be found in an extended abstract by Marko
 Dimjašević and Zvonimir Rakamarić:
 [JPF-Doop: Combining Concolic and Random Testing for Java][5].
 
 # Dependencies
 
-JPF-Doop includes a few tools that ship independently of JPF-Doop, but
-they are included in the JPF-Doop distribution for user's
-convenience. Those are [JaCoCo][6], [JUnit][7] version 4, and
-[Randoop][1].
+JDoop includes a few tools that ship independently of JDoop, but they
+are included in the JDoop distribution for user's convenience. Those
+are [JaCoCo][6], [JUnit][7] version 4, and [Randoop][1].
 
 The following need to be obtained and configured by the user:
 
 * [Java PathFinder][8],
-* Java PathFinder's [jDART][0],
+* [JDart][0],
 * [Python][3], version 2.7.
 
 If the user wishes to generate code coverage reports, [Apache Ant][4]
@@ -25,36 +24,36 @@ is needed too.
 
 # Installation and Configuration
 
-After you've cloned the repository, there is no installation of
-JPF-Doop because it is comprised of scripts written in Python. In
-other words, you can run JPF-Doop as soon as you obtained a copy of it
-(and you have all the dependencies in place). In order to have all
-JPF-Doop dependencies easily installed, you might want to take a look
-at an installation script `install-dep.sh` in the `env/` directory and
-possibly tweak a few parameters at the very top of the script.
+After you've cloned the repository, there is no installation of JDoop
+because it consists of scripts written in Python. In other words, you
+can run JDoop as soon as you obtained a copy of it (and you have all
+the dependencies in place). In order to have all JDoop dependencies
+easily installed, you might want to take a look at an installation
+script `install-dep.sh` in the `env/` directory and possibly tweak a
+few parameters at the very top of the script.
 
 You can configure various parameters in `jpfdoop.ini`. Most
 importantly, change `jpf-core` and `jpf-jdart` in the `jpfdoop`
 section so that they point to the main directories of jpf-core and
-jpf-jdart, respectively. Do not use `~` as a shorthand for your home
+JDart, respectively. Do not use `~` as a shorthand for your home
 directory.
 
 ## Configuration file
 
-JPF-Doop uses a configuration file. By default, it is
-`jpfdoop.ini`. The file is in the INI file format. It has 4 sections:
-`[jpfdoop]`, `[sut]`, `[tests]`, and `[lib]`. For an example, see the
-contents of `jpfdoop.ini`.
+JDoop uses a configuration file. By default, it is `jpfdoop.ini`. The
+file is in the INI file format. It has 4 sections: `[jpfdoop]`,
+`[sut]`, `[tests]`, and `[lib]`. For an example, see the contents of
+`jpfdoop.ini`.
 
 Section `[jpfdoop]` has two options. Option `jpf-core` specifies a
 path to Java PathFinder (core module), while option `jpf-jdart`
-specifies a path to Java PathFinder's jDART.
+specifies a path to JDart.
 
 Section `[sut]` has one option: `compilation-directory` specifies a
 directory where class files of the package being tested can be found.
 
-Section `[tests]` has one option: `compilation-directory` specifies
-a directory where should generated JUnit tests be compiled to.
+Section `[tests]` has one option: `compilation-directory` specifies a
+directory where should generated JUnit tests be compiled to.
 
 Section `[lib]` has three options that specify where various libraries
 can be found. Option `junit` is a path to a JUnit *jar*
@@ -64,12 +63,12 @@ archive. Finally, option `jacoco` is a path to a JaCoCo *jar* archive.
 
 # Usage
 
-To run JPF-Doop, a few parameters need to be passed to it, including a
+To run JDoop, a few parameters need to be passed to it, including a
 package name and where the package's source and class files are. Other
 arguments are optional. For example, to test the
 `org.apache.commons.collections` package from the Apache Commons
 library from the [jpf-doop-examples][2] repository, assuming that
-JPF-Doop and `jpf-doop-examples` are on the same directory hierarchy
+JDoop and `jpf-doop-examples` are on the same directory hierarchy
 level, run the following:
 
 ```
@@ -78,11 +77,11 @@ $ python jpfdoop.py --package-name org.apache.commons.collections --root ../jpf-
 ```
 
 A code coverage report will be generated and can be found in the
-`jacoco-site/` directory. JPF-Doop will generate two formats of the
+`jacoco-site/` directory. JDoop will generate two formats of the
 report - HTML (to be found in `jacoco/site/html/index.html`) and XML
 (to be found in `jacoco-site/report.xml`).
 
-For further information on how to run JPF-Doop, you can execute:
+For further information on how to run JDoop, you can execute:
 
 ```
 #!bash
@@ -90,8 +89,8 @@ $ python jpfdoop.py --help
 ```
 
 The user should make sure that files generated by previous executions
-of JPF-Doop are cleaned up before running JPF-Doop again. In
-particular, the following files and directories in JPF-Doop's root
+of JDoop are cleaned up before running JDoop again. In
+particular, the following files and directories in JDoop's root
 directory should be removed:
 
 * `tests-round-*`
@@ -108,7 +107,7 @@ and directories: `clean.sh`.
 
 ## Command line parameters
 
-JPF-Doop has several command line parameters:
+JDoop has several command line parameters:
 
 * `--package-name` - a required parameter with the name of a package
   you want to test (e.g. `org.apache.commons.collections`).
@@ -118,8 +117,8 @@ JPF-Doop has several command line parameters:
   `classlist.txt`) where the list of classes from the package will be
   written to.
 * `--timelimit`- an optional parameter (with the default value `120`)
-  with a time limit for JPF-Doop, in seconds. If `--generate-report`
-  is provided too, after the time limit is reached, JPF-Doop will
+  with a time limit for JDoop, in seconds. If `--generate-report`
+  is provided too, after the time limit is reached, JDoop will
   compile generated JUnit tests and generate a code coverage
   report. In other words, compilation and report generation execution
   times are not included in the time limit.
@@ -130,21 +129,21 @@ JPF-Doop has several command line parameters:
 * `--randoop-only` - an optional parameter (with the default value
   false) that specifies if only Randoop should be executed.
 * `--baseline` - an optional parameter (with the default value false)
-  that specifies if only baseline JPF-Doop should be executed. For
+  that specifies if only baseline JDoop should be executed. For
   more information on the baseline solution, see an
-  [extended abstract][5] on JPF-Doop.
+  [extended abstract][5] on JDoop.
 * `--generate-report` - an optional parameter (with the default value
   false) that specifies if a code coverage report should be generated
-  once JPF-Doop is done with its execution. If the parameter is
+  once JDoop is done with its execution. If the parameter is
   provided, [JaCoCo][6] will be executed to generate a code coverage
-  report for JUnit tests that JPF-Doop generated. If this option is
+  report for JUnit tests that JDoop generated. If this option is
   not provided, the user can generate the code coverage report
   herself, as described in section *Generating code coverage reports*.
 
 # Generating code coverage reports
 
-JPF-Doop has a script that generates a code coverage report for JUnit
-tests that can be used without JPF-Doop, i.e. unit tests can be
+JDoop has a script that generates a code coverage report for JUnit
+tests that can be used without JDoop, i.e. unit tests can be
 generated or obtained in some other way. The script is `report.py`,
 and it has a few dependencies. First of all, clone this repository. In
 addition, the following is needed:
@@ -173,17 +172,17 @@ $ python report.py --unittests TestBranching --classpath report-examples/:report
 ```
 
 The `report.py` script will generate a code coverage report in two
-formats - HTML and XML. Both can be found in a `jacoco-site/`
+formats - HTML and XML. Both can be found in the `jacoco-site/`
 directory.
 
 # Emulab
 
-To thoroughly evaluate JPF-Doop, we have been using [Emulab][9], a
+To thoroughly evaluate JDoop, we have been using [Emulab][9], a
 network testbed developed and provided by the
 [Flux Research Group][10] at the University of Utah.
 
 
-[0]: https://bitbucket.org/psycopaths/jpf-jdart
+[0]: https://github.com/psycopaths/jdart
 [1]: https://bitbucket.org/psycopaths/randoop
 [2]: https://bitbucket.org/psycopaths/jpf-doop-examples
 [3]: http://python.org
