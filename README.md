@@ -1,10 +1,10 @@
 # Introduction
 
-JDoop is a testing tool for Java libraries. It is based on the
-[Java PathFinder][8]'s concolic execution engine [JDart][0] and
-[Randoop][1], a feedback-directed random testing engine. More detailed
-description of JDoop can be found in an extended abstract by Marko
-Dimjašević and Zvonimir Rakamarić:
+JDoop (previously known as JPF-Doop) is a testing tool for Java
+libraries. It is based on the [Java PathFinder][8]'s concolic
+execution engine [JDart][0] and [Randoop][1], a feedback-directed
+random testing engine. More detailed description of JDoop can be found
+in an extended abstract by Marko Dimjašević and Zvonimir Rakamarić:
 [JPF-Doop: Combining Concolic and Random Testing for Java][5].
 
 # Dependencies
