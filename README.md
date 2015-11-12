@@ -1,7 +1,7 @@
 # Introduction
 
-JDoop (previously known as JPF-Doop) is a testing tool for Java
-libraries. It is based on the [Java PathFinder][8]'s concolic
+JDoop (previously known as JPF-Doop) is a free software testing tool
+for Java libraries. It is based on the [Java PathFinder][8]'s concolic
 execution engine [JDart][0] and [Randoop][1], a feedback-directed
 random testing engine. More detailed description of JDoop can be found
 in an extended abstract by Marko Dimjašević and Zvonimir Rakamarić:
@@ -180,6 +180,28 @@ directory.
 To thoroughly evaluate JDoop, we have been using [Emulab][9], a
 network testbed developed and provided by the
 [Flux Research Group][10] at the University of Utah.
+
+
+# Copyright
+Copyright 2015 Marko Dimjašević
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+JDoop dependencies, including those in the `lib/` directory, are free
+software as well, each licensed under its own license. Follow links to
+respective web pages listed in the *Dependencies* section to find out
+more.
 
 
 [0]: https://github.com/psycopaths/jdart

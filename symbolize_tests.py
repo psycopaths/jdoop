@@ -1,8 +1,26 @@
 #!/usr/bin/env python
 
+# Copyright 2015 Marko Dimjašević
+#
+# This file is part of JDoop.
+#
+# JDoop is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# JDoop is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with JDoop.  If not, see <http://www.gnu.org/licenses/>.
+
 # We assume that Randoop doesn't "prettify" variable names, i.e. the
 # assumption is that variable names are of var<N> form such as var0,
 # var1, var2, etc.
+
 
 import re
 import sys, os, errno, fileinput
