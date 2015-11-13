@@ -67,13 +67,13 @@ To run JDoop, a few parameters need to be passed to it, including a
 package name and where the package's source and class files are. Other
 arguments are optional. For example, to test the
 `org.apache.commons.collections` package from the Apache Commons
-library from the [jpf-doop-examples][2] repository, assuming that
-JDoop and `jpf-doop-examples` are on the same directory hierarchy
+library from the [JDoop-examples][2] repository, assuming that
+JDoop and `JDoop-examples` are on the same directory hierarchy
 level, run the following:
 
 ```
 #!bash
-$ python jpfdoop.py --package-name org.apache.commons.collections --root ../jpf-doop-examples/
+$ python jpfdoop.py --package-name org.apache.commons.collections --root ../jdoop-examples/
 ```
 
 A code coverage report will be generated and can be found in the
@@ -206,7 +206,7 @@ more.
 
 [0]: https://github.com/psycopaths/jdart
 [1]: https://bitbucket.org/psycopaths/randoop
-[2]: https://bitbucket.org/psycopaths/jpf-doop-examples
+[2]: https://github.com/psycopaths/jdoop-examples
 [3]: http://python.org
 [4]: https://ant.apache.org/
 [5]: http://dimjasevic.net/marko/wp-content/uploads/2013/10/jpf-workshop-2013.pdf
