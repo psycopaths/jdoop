@@ -10,8 +10,8 @@ in an extended abstract by Marko Dimjašević and Zvonimir Rakamarić:
 # Dependencies
 
 JDoop includes a few tools that ship independently of JDoop, but they
-are included in the JDoop distribution for user's convenience. Those
-are [JaCoCo][6], [JUnit][7] version 4, and [Randoop][1].
+are bundled with JDoop for convenience: [JaCoCo][6], [JUnit][7]
+version 4, and [Randoop][1].
 
 The following need to be obtained and configured by the user:
 
