@@ -201,7 +201,7 @@ more.
 
 
 [0]: https://github.com/psycopaths/jdart
-[1]: https://bitbucket.org/psycopaths/randoop
+[1]: https://mernst.github.io/randoop/
 [2]: https://github.com/psycopaths/jdoop-examples
 [3]: http://python.org
 [4]: https://ant.apache.org/
