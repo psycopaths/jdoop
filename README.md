@@ -66,13 +66,13 @@ archive. Finally, option `jacoco` is a path to a JaCoCo *jar* archive.
 To run JDoop, a few parameters need to be passed to it, including a
 package name and where the package's source and class files are. Other
 arguments are optional. For example, to test the
-`org.apache.commons.collections` package from the Apache Commons
-library from the [JDoop-examples][2] repository, assuming that
-JDoop and `JDoop-examples` are on the same directory hierarchy
-level, run the following:
+`org.apache.commons.collections4` package from the Apache Commons
+library from the [JDoop-examples][2] repository, assuming that JDoop
+and `JDoop-examples` are on the same directory hierarchy level, run
+the following:
 
 ```bash
-python jpfdoop.py --package-name org.apache.commons.collections --root ../jdoop-examples/
+python jpfdoop.py --package-name org.apache.commons.collections4 --root ../jdoop-examples/commons-collections/src/main/java --generate-report
 ```
 
 A code coverage report will be generated and can be found in the

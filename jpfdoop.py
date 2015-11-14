@@ -87,7 +87,7 @@ class Paths:
 
 
 class RandoopRun:
-    def __init__(self, unit_tests_name, unit_tests_directory, classlist_filename, timelimit, paths, randoop_only, dont_terminate = False, use_concrete_values = False, randoop_threads = "10"):
+    def __init__(self, unit_tests_name, unit_tests_directory, classlist_filename, timelimit, paths, randoop_only, dont_terminate = False, use_concrete_values = False):
         self.unit_tests_name = unit_tests_name
         self.unit_tests_directory = unit_tests_directory
         self.classlist_filename = classlist_filename
@@ -96,7 +96,6 @@ class RandoopRun:
         self.dont_terminate = dont_terminate
         self.use_concrete_values = use_concrete_values
         self.randoop_only = randoop_only
-        self.randoop_threads = randoop_threads
 
 
     def run(self):
@@ -116,7 +115,7 @@ class RandoopRun:
         else:
             additional_params = " --literals-file=concrete-values.txt --literals-level=ALL"
 
-        additional_params += " --forbid-null=false --small-tests=true --testsperfile=1 --check-object-contracts=false --max-threads " + self.randoop_threads
+        additional_params += " --forbid-null=false --small-tests=true --testsperfile=1 --check-object-contracts=false"
 
         # Output generated tests in a serialized form so that they can
         # be refused in later executions of Randoop
@@ -184,10 +183,10 @@ class JPFDoop:
             sys.exit(1)
 
 
-    def run_randoop(self, unit_tests, classlist, timelimit, dont_terminate = False, use_concrete_values = False, randoop_threads = 10):
+    def run_randoop(self, unit_tests, classlist, timelimit, dont_terminate = False, use_concrete_values = False):
         """Invokes Randoop"""
 
-        randoop_run = RandoopRun(unit_tests.name, unit_tests.directory, classlist.filename, str(timelimit), self.paths, self.randoop_only, dont_terminate, use_concrete_values, str(randoop_threads))
+        randoop_run = RandoopRun(unit_tests.name, unit_tests.directory, classlist.filename, str(timelimit), self.paths, self.randoop_only, dont_terminate, use_concrete_values)
         randoop_run.run()
 
 
@@ -563,7 +562,6 @@ if __name__ == "__main__":
     parser.add_argument('--randoop-only', default=False, action="store_true", help='The tool should run Randoop only')
     parser.add_argument('--baseline', default=False, action="store_true", help='The tool should run in the baseline mode')
     parser.add_argument('--generate-report', default=False, action="store_true", help='The tool should generate a code coverage report once it finishes its execution')
-    parser.add_argument('--randoop-threads', default=10, type=int, help='Maximum number of threads Randoop can execute simultaneously')
     params = parser.parse_args()
 
     have_to_finish_by = jpfdoop.get_clock_starting_time("program") + params.timelimit
@@ -585,7 +583,7 @@ if __name__ == "__main__":
 
     # Invoke Randoop to generate unit tests
     jpfdoop.start_clock("Randoop #1")
-    jpfdoop.run_randoop(unit_tests, classlist, timelimit, dont_terminate = True, randoop_threads = params.randoop_threads)
+    jpfdoop.run_randoop(unit_tests, classlist, timelimit, dont_terminate = True)
     jpfdoop.stop_clock("Randoop #1")
 
     # Split up the main unit test suite class if needed. With 1 unit
