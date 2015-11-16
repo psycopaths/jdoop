@@ -66,13 +66,13 @@ archive. Finally, option `jacoco` is a path to a JaCoCo *jar* archive.
 To run JDoop, a few parameters need to be passed to it, including a
 package name and where the package's source and class files are. Other
 arguments are optional. For example, to test the
-`org.apache.commons.collections4` package from the Apache Commons
-library from the [JDoop-examples][2] repository, assuming that JDoop
-and `JDoop-examples` are on the same directory hierarchy level, run
-the following:
+`org.apache.commons.net` package from the Apache Commons library from
+the [JDoop-examples][2] repository, assuming that JDoop and
+JDoop-examples are on the same directory hierarchy level, run the
+following:
 
 ```bash
-python jpfdoop.py --package-name org.apache.commons.collections4 --root ../jdoop-examples/commons-collections/src/main/java --generate-report
+python jpfdoop.py --package-name org.apache.commons.net --root ../jdoop-examples/commons-net/src/main/java --generate-report
 ```
 
 A code coverage report will be generated and can be found in the
@@ -108,7 +108,7 @@ and directories: `clean.sh`.
 JDoop has several command line parameters:
 
 * `--package-name` - a required parameter with the name of a package
-  you want to test (e.g. `org.apache.commons.collections`).
+  you want to test (e.g. `org.apache.commons.net`).
 * `--root` - a required parameter with a directory where source files
   of the package are.
 * `--classlist` - an optional parameter (with the default value
@@ -195,7 +195,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 JDoop dependencies, including those in the `lib/` directory, are free
-software as well, each licensed under its own license. Follow links to
+software as well, each licensed under its own terms. Follow links to
 respective web pages listed in the *Dependencies* section to find out
 more.
 
