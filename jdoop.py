@@ -68,7 +68,7 @@ class ClassList:
 
 
     def write_list_of_classes(self, root, rel_path):
-        """Writes to a file a list of classes to be tested by JPFDoop"""
+        """Writes to a file a list of classes to be tested by JDoop"""
 
         with open(self.filename, 'w') as f:
             f.write("\n".join(self.get_all_java_source_files(root, rel_path)) + "\n")
@@ -143,7 +143,7 @@ class RandoopRun:
             command.run(timeout = int(int(self.unit_tests_timelimit) * 1.1 + 10))
 
 
-class JPFDoop:
+class JDoop:
     def __init__(self):
         pass
         self.paths = Paths()
@@ -165,14 +165,14 @@ class JPFDoop:
         config = ConfigParser.RawConfigParser()
         config.read(config_file_name)
 
-        sections = ['jpfdoop', 'sut', 'tests', 'lib']
+        sections = ['jdoop', 'sut', 'tests', 'lib']
         for section in sections:
             if not config.has_section(section):
                 sys.exit("The configuration file does not have the [" + section + "] section!")
 
         try:
-            self.jpf_core_path = str(config.get('jpfdoop', 'jpf-core'))
-            self.jpf_jdart_path = str(config.get('jpfdoop', 'jpf-jdart'))
+            self.jpf_core_path = str(config.get('jdoop', 'jpf-core'))
+            self.jdart_path = str(config.get('jdoop', 'jdart'))
             self.paths.sut_compilation_dir = str(config.get('sut', 'compilation-directory'))
             self.paths.tests_compilation_dir = str(config.get('tests', 'compilation-directory'))
             self.paths.lib_junit = str(config.get('lib', 'junit'))
@@ -279,7 +279,7 @@ class JPFDoop:
         except:
             pass
 
-        compile_tests_command = Command(args = "javac -g -d " + self.paths.tests_compilation_dir + " -classpath " + ":".join([os.path.join(self.jpf_jdart_path, "build"), os.path.join(self.jpf_jdart_path, "build/annotations/"), self.paths.sut_compilation_dir, self.paths.tests_compilation_dir, self.paths.lib_junit]) + " " + os.path.join("./", unit_tests.randooped_package_name +  "/*java"))
+        compile_tests_command = Command(args = "javac -g -d " + self.paths.tests_compilation_dir + " -classpath " + ":".join([os.path.join(self.jdart_path, "build"), os.path.join(self.jdart_path, "build/annotations/"), self.paths.sut_compilation_dir, self.paths.tests_compilation_dir, self.paths.lib_junit]) + " " + os.path.join("./", unit_tests.randooped_package_name +  "/*java"))
         compile_tests_command.run()
 
 
@@ -486,12 +486,12 @@ class JPFDoop:
         print "%s: %.2lf" % (clock_label, self.total_clock_time(clock_label))
 
     def print_stats(self):
-        """Prints statistics on execution times for various components of JPF-Doop"""
+        """Prints statistics on execution times for various components of JDoop"""
 
         print ""
 
-        for c in jpfdoop.clock.iterkeys():
-            jpfdoop.print_clock(c)
+        for c in jdoop.clock.iterkeys():
+            jdoop.print_clock(c)
 
     def determine_timelimit(self, identifier, execution_number = None):
         """Determine how much time can and should be spent for a particular task given a global time limit and time left"""
@@ -550,58 +550,58 @@ class JPFDoop:
         
 if __name__ == "__main__":
 
-    jpfdoop = JPFDoop()
-    jpfdoop.start_clock("program")
+    jdoop = JDoop()
+    jdoop.start_clock("program")
 
-    parser = argparse.ArgumentParser(description='Generates unit tests with Randoop only or with JPF-Doop.')
+    parser = argparse.ArgumentParser(description='Generates unit tests with Randoop only or with JDoop.')
     parser.add_argument('--package-name', required=True, help='A Java package with classes to analyze.')
     parser.add_argument('--root', required=True, help='source files root directory')
     parser.add_argument('--classlist', default='classlist.txt', help='Name of a file to write a file list to')
-    parser.add_argument('--timelimit', default=120, type=int, help='Timelimit in seconds in which JPF-Doop should finish its execution')
-    parser.add_argument('--configuration-file', default='jpfdoop.ini', help='A configuration file with settings for JPF-Doop')
+    parser.add_argument('--timelimit', default=120, type=int, help='Timelimit in seconds in which JDoop should finish its execution')
+    parser.add_argument('--configuration-file', default='jdoop.ini', help='A configuration file with settings for JDoop')
     parser.add_argument('--randoop-only', default=False, action="store_true", help='The tool should run Randoop only')
     parser.add_argument('--baseline', default=False, action="store_true", help='The tool should run in the baseline mode')
     parser.add_argument('--generate-report', default=False, action="store_true", help='The tool should generate a code coverage report once it finishes its execution')
     params = parser.parse_args()
 
-    have_to_finish_by = jpfdoop.get_clock_starting_time("program") + params.timelimit
+    have_to_finish_by = jdoop.get_clock_starting_time("program") + params.timelimit
 
-    jpfdoop.read_config_file(params.configuration_file)
-    jpfdoop.paths.package_path = os.path.normpath(params.package_name.replace(".", "/"))
-    jpfdoop.randoop_only = params.randoop_only
-    jpfdoop.baseline = params.baseline
+    jdoop.read_config_file(params.configuration_file)
+    jdoop.paths.package_path = os.path.normpath(params.package_name.replace(".", "/"))
+    jdoop.randoop_only = params.randoop_only
+    jdoop.baseline = params.baseline
 
     # Create a list of classes to be tested
     classlist = ClassList(params.classlist)
-    classlist.write_list_of_classes(params.root, jpfdoop.paths.package_path)
+    classlist.write_list_of_classes(params.root, jdoop.paths.package_path)
 
     unit_tests = UnitTests(name = "Randoop1Test", directory = "tests-round-1", randooped_package_name = "randooped1")
 
     # Determine how much time should be given to the first run of
     # Randoop
-    timelimit = jpfdoop.determine_timelimit("Randoop", 1)
+    timelimit = jdoop.determine_timelimit("Randoop", 1)
 
     # Invoke Randoop to generate unit tests
-    jpfdoop.start_clock("Randoop #1")
-    jpfdoop.run_randoop(unit_tests, classlist, timelimit, dont_terminate = True)
-    jpfdoop.stop_clock("Randoop #1")
+    jdoop.start_clock("Randoop #1")
+    jdoop.run_randoop(unit_tests, classlist, timelimit, dont_terminate = True)
+    jdoop.stop_clock("Randoop #1")
 
     # Split up the main unit test suite class if needed. With 1 unit
     # test per class, there are too many calls from the main class to
     # fit into the 64K bytecode size limit
     #
-    new_unit_tests = jpfdoop.check_and_split_up_suite(unit_tests)
+    new_unit_tests = jdoop.check_and_split_up_suite(unit_tests)
 
     # Compile tests generated by Randoop
     # if params.generate_report and not params.randoop_only:
-    #     jpfdoop.compile_tests(new_unit_tests)
+    #     jdoop.compile_tests(new_unit_tests)
 
     # Start creating a list of unit tests
     # unit_tests_list = [ut.name for ut in new_unit_tests]
     unit_tests_list = new_unit_tests[:]
 
     # A classpath variable needed for code coverage reports
-    classpath = ":".join([jpfdoop.paths.lib_junit, jpfdoop.paths.sut_compilation_dir, jpfdoop.paths.tests_compilation_dir])
+    classpath = ":".join([jdoop.paths.lib_junit, jdoop.paths.sut_compilation_dir, jdoop.paths.tests_compilation_dir])
 
     i = 1
     # Instead of using True for an infinite loop, in this way I am
@@ -613,48 +613,48 @@ if __name__ == "__main__":
 
         # if not params.randoop_only:
         # Symbolize unit tests
-        jpfdoop.start_clock("Symbolization of unit tests #%d" % (i-1))
+        jdoop.start_clock("Symbolization of unit tests #%d" % (i-1))
         # TODO: Vary number of unit tests to select based on
         # previous performance
-        jpfdoop.symbolize_unit_tests(unit_tests, count = 30)
-        jpfdoop.stop_clock("Symbolization of unit tests #%d" % (i-1))
+        jdoop.symbolize_unit_tests(unit_tests, count = 30)
+        jdoop.stop_clock("Symbolization of unit tests #%d" % (i-1))
 
         # Generate JPF configuration files
-        jpfdoop.generate_jpf_conf(unit_tests, params.root)
+        jdoop.generate_jpf_conf(unit_tests, params.root)
 
         # Compile symbolized unit tests
-        jpfdoop.start_clock("Compilation of symbolic unit tests #%d" % (i-1))
-        jpfdoop.compile_symbolic_tests(params.root, unit_tests)
-        jpfdoop.stop_clock("Compilation of symbolic unit tests #%d" % (i-1))
+        jdoop.start_clock("Compilation of symbolic unit tests #%d" % (i-1))
+        jdoop.compile_symbolic_tests(params.root, unit_tests)
+        jdoop.stop_clock("Compilation of symbolic unit tests #%d" % (i-1))
 
         # Run JDart on symbolized unit tests
-        timelimit = jpfdoop.determine_timelimit("JDart")
+        timelimit = jdoop.determine_timelimit("JDart")
 
-        jpfdoop.start_clock("Global run of JDart #%d" % (i-1))
-        jpfdoop.run_jdart(unit_tests, params.root, classlist, jpfdoop.paths.package_path, timelimit)
-        jpfdoop.stop_clock("Global run of JDart #%d" % (i-1))
+        jdoop.start_clock("Global run of JDart #%d" % (i-1))
+        jdoop.run_jdart(unit_tests, params.root, classlist, jdoop.paths.package_path, timelimit)
+        jdoop.stop_clock("Global run of JDart #%d" % (i-1))
 
         # Run Randoop
-        timelimit = jpfdoop.determine_timelimit("Randoop", i)
+        timelimit = jdoop.determine_timelimit("Randoop", i)
         if timelimit > 3:
             unit_tests = UnitTests(name = "Randoop%dTest" % i, directory = "tests-round-%d" % i, randooped_package_name = "randooped%d" % i)
 
-            jpfdoop.start_clock("Randoop #%d" % i)
+            jdoop.start_clock("Randoop #%d" % i)
             if params.randoop_only:
-                jpfdoop.run_randoop(unit_tests, classlist, timelimit, dont_terminate = True)
+                jdoop.run_randoop(unit_tests, classlist, timelimit, dont_terminate = True)
             else:
-                jpfdoop.run_randoop(unit_tests, classlist, timelimit, dont_terminate = True, use_concrete_values = True)
-            jpfdoop.stop_clock("Randoop #%d" % i)
+                jdoop.run_randoop(unit_tests, classlist, timelimit, dont_terminate = True, use_concrete_values = True)
+            jdoop.stop_clock("Randoop #%d" % i)
 
             # Split up the main unit test suite class if needed. With 1 unit
             # test per class, there are too many calls from the main class to
             # fit into the 64K bytecode size limit
             #
-            new_unit_tests = jpfdoop.check_and_split_up_suite(unit_tests)
+            new_unit_tests = jdoop.check_and_split_up_suite(unit_tests)
 
             # Compile tests generated by Randoop
             # if params.generate_report:
-            #     jpfdoop.compile_tests(new_unit_tests)
+            #     jdoop.compile_tests(new_unit_tests)
 
             # unit_tests_list.extend([ut.name for ut in new_unit_tests])
             unit_tests_list.extend(new_unit_tests)
@@ -665,50 +665,50 @@ if __name__ == "__main__":
 
         # If we are in the baseline mode, no further iterations should
         # be performed
-        if jpfdoop.baseline:
+        if jdoop.baseline:
             break
 
-    jpfdoop.stop_clock("program")
+    jdoop.stop_clock("program")
 
     # if params.generate_report and not params.randoop_only:
     if params.generate_report:
-        # jpfdoop.start_clock("Remaining unit test compilation")
-        jpfdoop.start_clock("Compilation of unit tests")
-        # while jpfdoop.compilation_threads:
-        #     [cmd, name] = jpfdoop.compilation_threads.popleft()
+        # jdoop.start_clock("Remaining unit test compilation")
+        jdoop.start_clock("Compilation of unit tests")
+        # while jdoop.compilation_threads:
+        #     [cmd, name] = jdoop.compilation_threads.popleft()
         #     cmd.join_thread()
-        # jpfdoop.stop_clock("Remaining unit test compilation")
+        # jdoop.stop_clock("Remaining unit test compilation")
 
-        jpfdoop.compile_tests(unit_tests_list)
-        jpfdoop.stop_clock("Compilation of unit tests")
+        jdoop.compile_tests(unit_tests_list)
+        jdoop.stop_clock("Compilation of unit tests")
 
     # if params.generate_report and params.randoop_only:
-    #     jpfdoop.compile_tests(new_unit_tests)
+    #     jdoop.compile_tests(new_unit_tests)
         
 
     if params.generate_report:
         # Run all tests and let JaCoCo measure coverage
-        jpfdoop.start_clock("Code coverage report")
+        jdoop.start_clock("Code coverage report")
         # for unit_tests_suite in unit_tests_list[:-1]:
-        #     report = Report(jpfdoop.paths.lib_jacoco, [unit_tests_suite], os.path.normpath(jpfdoop.paths.package_path), classpath, params.root, jpfdoop.paths.sut_compilation_dir)
+        #     report = Report(jdoop.paths.lib_jacoco, [unit_tests_suite], os.path.normpath(jdoop.paths.package_path), classpath, params.root, jdoop.paths.sut_compilation_dir)
         #     report.run_testing()
 
         # # Run code coverage for the last one and generate a report
-        # report = Report(jpfdoop.paths.lib_jacoco, [unit_tests_list[-1]], os.path.normpath(jpfdoop.paths.package_path), classpath, params.root, jpfdoop.paths.sut_compilation_dir)
+        # report = Report(jdoop.paths.lib_jacoco, [unit_tests_list[-1]], os.path.normpath(jdoop.paths.package_path), classpath, params.root, jdoop.paths.sut_compilation_dir)
         # report.run_code_coverage()
 
         for unit_tests_suite in unit_tests_list[:-1]:
-            report = Report(jpfdoop.paths.lib_jacoco, [unit_tests_suite.name], os.path.normpath(jpfdoop.paths.package_path), classpath, params.root, jpfdoop.paths.sut_compilation_dir)
+            report = Report(jdoop.paths.lib_jacoco, [unit_tests_suite.name], os.path.normpath(jdoop.paths.package_path), classpath, params.root, jdoop.paths.sut_compilation_dir)
             report.run_testing()
 
         # Run code coverage for the last one and generate a report
-        report = Report(jpfdoop.paths.lib_jacoco, [unit_tests_list[-1].name], os.path.normpath(jpfdoop.paths.package_path), classpath, params.root, jpfdoop.paths.sut_compilation_dir)
+        report = Report(jdoop.paths.lib_jacoco, [unit_tests_list[-1].name], os.path.normpath(jdoop.paths.package_path), classpath, params.root, jdoop.paths.sut_compilation_dir)
         report.run_code_coverage()
 
-        jpfdoop.stop_clock("Code coverage report")
+        jdoop.stop_clock("Code coverage report")
 
     # Print execution time statistics
-    jpfdoop.print_stats()
+    jdoop.print_stats()
 
     # Print statistics on concrete values
     if not params.randoop_only:
@@ -717,9 +717,9 @@ if __name__ == "__main__":
         print "Concrete values stats\n"
 
         print "Contribution of each JDart execution"
-        for s in jpfdoop.concrete_values_all_runs_stats:
+        for s in jdoop.concrete_values_all_runs_stats:
             print "Set size: %4d, contribution: %4d, unit tests name: %s" % (s[0], s[1], s[2])
 
         print "\nContribution of each iteration"
-        for s in jpfdoop.concrete_values_iterations_stats:
+        for s in jdoop.concrete_values_iterations_stats:
             print "Set size: %4d, contribution: %4d, unit tests name: %s" % (s[0], s[1], s[2])
