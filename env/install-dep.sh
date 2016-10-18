@@ -31,16 +31,13 @@ install_z3=1
 install_jpf_core=1
 install_jdart=1
 
-# Directories
-z3_dir=$project_root_dir/z3
-
 
 if [ ${install_packages} -eq 1 ]; then
 
     # Make sure Debian backports are enabled. This is needed for Java
     # 8 packages
     apt_source_file=/etc/apt/sources.list.d/debian-backports.list
-    sudo su -c "echo 'deb http://mirrors.kernel.org/debian jessie-backports main' >> ${apt_source_file}"
+    sudo su -c "echo 'deb http://mirrors.kernel.org/debian jessie-backports main' > ${apt_source_file}"
     sudo su -c "echo 'deb-src http://mirrors.kernel.org/debian jessie-backports main' >> ${apt_source_file}"
     
     # This is for Debian 8 (Jessie) x86-64 on Emulab
@@ -78,20 +75,36 @@ fi
 
 if [ ${install_z3} -eq 1 ]; then
 
-    mkdir -p ${z3_dir}
-    cd ${project_root_dir}
-    z3_archive=z3-4.4.1.tar.gz
-    wget https://github.com/Z3Prover/z3/archive/${z3_archive}
-    tar xf ${z3_archive} --strip-components 1 --directory ${z3_dir}
-    rm ${z3_archive}
-    cd ${z3_dir}
-    
-    python scripts/mk_make.py --java
-    cd build
-    make -j32 all
-    sudo make install
+    # z3 has been packaged only for Debian Stretch (Debian 9), so we
+    # will download its binary packages from a Stretch snapshot
+    # archive.
+    #
+    # Note we're using version 4.4.0-5 as 4.4.1 Debian builds (prior
+    # to and including 4.4.1-0.5) have faulty libz3java.so that breaks
+    # jconstraints-z3 (jconstraints-z3 reports it cannot find the
+    # library on standard paths (including LD_LIBRARY_PATH and
+    # java.library.path)).
 
-    mvn install:install-file -Dfile=com.microsoft.z3.jar -DgroupId=com.microsoft -DartifactId=z3 -Dversion=0.9 -Dpackaging=jar
+    # 4.4.0-5
+    wget http://snapshot.debian.org/archive/debian/20151208T035513Z/pool/main/z/z3/libz3-dev_4.4.0-5_amd64.deb
+    wget http://snapshot.debian.org/archive/debian/20151208T035513Z/pool/main/z/z3/libz3-jni_4.4.0-5_amd64.deb
+    wget http://snapshot.debian.org/archive/debian/20151208T035513Z/pool/main/z/z3/libz3-java_4.4.0-5_all.deb
+    wget http://snapshot.debian.org/archive/debian/20151208T035513Z/pool/main/z/z3/z3_4.4.0-5_amd64.deb
+
+    for pkg in libz3-dev libz3-jni libz3-java z3; do
+	sudo dpkg --install $pkg*.deb
+    done
+
+    if [ -f "~/.m2" ]; then
+	rm ~/.m2
+    fi
+    mkdir -p ${project_root_dir}/.m2
+    ln -s ${project_root_dir}/.m2 ~/.m2 || true
+    mkdir -p ~/.m2/repository
+    
+    mvn install:install-file -Dfile=/usr/share/java/com.microsoft.z3.jar \
+	-DgroupId=com.microsoft -DartifactId=z3 -Dversion=4.4.0 \
+	-Dpackaging=jar
 fi
 
 # Install JPF modules
@@ -113,7 +126,7 @@ if [ ${install_jpf_core} -eq 1 ]; then
     hg clone http://babelfish.arc.nasa.gov/hg/jpf/jpf-core ${jpf_core_dir}
     cd ${jpf_core_dir}
     # Revert to a commit we are sure works with JDoop
-    hg update -r 29
+    hg update --rev 31
     ant
 
     echo "jpf-core = ${jpf_core_dir}" >> ${jpf_conf_file}
@@ -126,20 +139,25 @@ if [ ${install_jdart} -eq 1 ]; then
     jconstraints_dir=${project_root_dir}/jconstraints
     git clone https://github.com/psycopaths/jconstraints.git ${jconstraints_dir}
     cd ${jconstraints_dir}
+    git checkout 4b4440c # This is the jconstraints-0.9.1 tag as of
+			 # Aug 23, 2016
     mvn install
+
+    jconstraints_conf_dir=${project_root_dir}/.jconstraints
+    mkdir -p ${jconstraints_conf_dir}/extensions
+    ln -s ${jconstraints_conf_dir} ~/.jconstraints || true
+    cp /usr/share/java/com.microsoft.z3.jar ~/.jconstraints/extensions
 
     # Install jconstraints-z3
     # export LD_LIBRARY_PATH=/usr/lib
     jconstraints_z3_dir=${project_root_dir}/jconstraints-z3
     git clone https://github.com/psycopaths/jconstraints-z3.git ${jconstraints_z3_dir}
     cd ${jconstraints_z3_dir}
+    git checkout 1a31c98 # This is the jconstraints-z3-0.9.0 tag as of
+			 # Aug 23, 2016
+    sed -i -e 's/4\.4\.1/4\.4\.0/g' pom.xml
     mvn install
-
-    jconstraints_conf_dir=${project_root_dir}/.jconstraints
-    mkdir -p ${jconstraints_conf_dir}/extensions
-    ln -s ${jconstraints_conf_dir} ~/.jconstraints || true
-    cp target/jConstraints-z3-1.0-SNAPSHOT.jar ~/.jconstraints/extensions
-    cp ${z3_dir}/build/com.microsoft.z3.jar ~/.jconstraints/extensions
+    cp target/jconstraints-z3-0.9.0.jar ~/.jconstraints/extensions
 
     echo "jconstraints = $jconstraints_dir" >> ${jpf_conf_file}
 
@@ -147,6 +165,7 @@ if [ ${install_jdart} -eq 1 ]; then
     jdart_dir=${project_root_dir}/jdart
     git clone https://github.com/psycopaths/jdart.git ${jdart_dir}
     cd ${jdart_dir}
+    git checkout cd5b815 # This is a version as of Aug 29, 2016
     ant
 
     echo "jpf-jdart = ${jdart_dir}" >> ${jpf_conf_file}
