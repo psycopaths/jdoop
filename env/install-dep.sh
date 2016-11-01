@@ -17,22 +17,20 @@
 # You should have received a copy of the GNU General Public License
 # along with JDoop.  If not, see <http://www.gnu.org/licenses/>.
 
-# Script adopted from Raimondas Sasnauskas and SMACK's installation
-# scripts
-
 # Exit on error
 set -e
 
-project_root_dir=/mnt/storage/jdart-project
+PROJECT_ROOT=${PROJECT_ROOT:-/mnt/storage/jdart-project}
 
-# Set these flags to control what to install
-install_packages=1
-install_z3=1
-install_jpf_core=1
-install_jdart=1
+# Set these flags to control what to install. Default is '1', which
+# corresponds to yes.
+INSTALL_PACKAGES=${INSTALL_PACKAGES:-1}
+INSTALL_Z3=${INSTALL_Z3:-1}
+INSTALL_JPF_CORE=${INSTALL_JPF_CORE:-1}
+INSTALL_JDART=${INSTALL_JDART:-1}
 
 
-if [ ${install_packages} -eq 1 ]; then
+if [ ${INSTALL_PACKAGES} -eq 1 ]; then
 
     # Make sure Debian backports are enabled. This is needed for Java
     # 8 packages
@@ -73,7 +71,7 @@ fi
 
 # Install Z3
 
-if [ ${install_z3} -eq 1 ]; then
+if [ ${INSTALL_Z3} -eq 1 ]; then
 
     # z3 has been packaged only for Debian Stretch (Debian 9), so we
     # will download its binary packages from a Stretch snapshot
@@ -98,8 +96,8 @@ if [ ${install_z3} -eq 1 ]; then
     if [ -f "~/.m2" ]; then
 	rm ~/.m2
     fi
-    mkdir -p ${project_root_dir}/.m2
-    ln -s ${project_root_dir}/.m2 ~/.m2 || true
+    mkdir -p ${PROJECT_ROOT}/.m2
+    ln -s ${PROJECT_ROOT}/.m2 ~/.m2 || true
     mkdir -p ~/.m2/repository
     
     mvn install:install-file -Dfile=/usr/share/java/com.microsoft.z3.jar \
@@ -110,19 +108,19 @@ fi
 # Install JPF modules
 # JPF configuration directory
 
-if [ ${install_jpf_core} -eq 1 ] || [ ${install_jdart} -eq 1 ]; then
+if [ ${INSTALL_JPF_CORE} -eq 1 ] || [ ${INSTALL_JDART} -eq 1 ]; then
 
-    jpf_conf_dir=${project_root_dir}/.jpf
+    jpf_conf_dir=${PROJECT_ROOT}/.jpf
     mkdir -p $jpf_conf_dir
     ln -s ${jpf_conf_dir}/ ~/.jpf || true
     jpf_conf_file=~/.jpf/site.properties
 fi
 
 
-if [ ${install_jpf_core} -eq 1 ]; then
+if [ ${INSTALL_JPF_CORE} -eq 1 ]; then
 
     # Install jpf-core
-    jpf_core_dir=${project_root_dir}/jpf-core
+    jpf_core_dir=${PROJECT_ROOT}/jpf-core
     hg clone http://babelfish.arc.nasa.gov/hg/jpf/jpf-core ${jpf_core_dir}
     cd ${jpf_core_dir}
     # Revert to a commit we are sure works with JDoop
@@ -133,24 +131,24 @@ if [ ${install_jpf_core} -eq 1 ]; then
 fi
 
 
-if [ ${install_jdart} -eq 1 ]; then
+if [ ${INSTALL_JDART} -eq 1 ]; then
 
     # Install jconstraints
-    jconstraints_dir=${project_root_dir}/jconstraints
+    jconstraints_dir=${PROJECT_ROOT}/jconstraints
     git clone https://github.com/psycopaths/jconstraints.git ${jconstraints_dir}
     cd ${jconstraints_dir}
     git checkout 4b4440c # This is the jconstraints-0.9.1 tag as of
 			 # Aug 23, 2016
     mvn install
 
-    jconstraints_conf_dir=${project_root_dir}/.jconstraints
+    jconstraints_conf_dir=${PROJECT_ROOT}/.jconstraints
     mkdir -p ${jconstraints_conf_dir}/extensions
     ln -s ${jconstraints_conf_dir} ~/.jconstraints || true
     cp /usr/share/java/com.microsoft.z3.jar ~/.jconstraints/extensions
 
     # Install jconstraints-z3
     # export LD_LIBRARY_PATH=/usr/lib
-    jconstraints_z3_dir=${project_root_dir}/jconstraints-z3
+    jconstraints_z3_dir=${PROJECT_ROOT}/jconstraints-z3
     git clone https://github.com/psycopaths/jconstraints-z3.git ${jconstraints_z3_dir}
     cd ${jconstraints_z3_dir}
     git checkout 1a31c98 # This is the jconstraints-z3-0.9.0 tag as of
@@ -162,7 +160,7 @@ if [ ${install_jdart} -eq 1 ]; then
     echo "jconstraints = $jconstraints_dir" >> ${jpf_conf_file}
 
     # Install JDart
-    jdart_dir=${project_root_dir}/jdart
+    jdart_dir=${PROJECT_ROOT}/jdart
     git clone https://github.com/psycopaths/jdart.git ${jdart_dir}
     cd ${jdart_dir}
     git checkout cd5b815 # This is a version as of Aug 29, 2016
