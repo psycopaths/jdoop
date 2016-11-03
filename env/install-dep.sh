@@ -49,7 +49,7 @@ if [ ${INSTALL_PACKAGES} -eq 1 ]; then
     echo 'linux-image-3.16.0-4-amd64 hold' | sudo dpkg --set-selections
     
     sudo apt-get update
-    dependencies="htop screen tree git mercurial ant ant-optional openjdk-8-jre openjdk-8-jre-headless openjdk-8-jdk antlr3 libguava-java python maven"
+    dependencies="git mercurial ant ant-optional openjdk-8-jre openjdk-8-jre-headless openjdk-8-jdk antlr3 libguava-java python maven wget unzip coreutils"
     sudo apt-get install --assume-yes $dependencies
 
     # Set Java 8 as the default Java version
