@@ -84,14 +84,25 @@ if [ ${INSTALL_Z3} -eq 1 ]; then
     # java.library.path)).
 
     # 4.4.0-5
-    wget http://snapshot.debian.org/archive/debian/20151208T035513Z/pool/main/z/z3/libz3-dev_4.4.0-5_amd64.deb
-    wget http://snapshot.debian.org/archive/debian/20151208T035513Z/pool/main/z/z3/libz3-jni_4.4.0-5_amd64.deb
-    wget http://snapshot.debian.org/archive/debian/20151208T035513Z/pool/main/z/z3/libz3-java_4.4.0-5_all.deb
-    wget http://snapshot.debian.org/archive/debian/20151208T035513Z/pool/main/z/z3/z3_4.4.0-5_amd64.deb
+    # wget http://snapshot.debian.org/archive/debian/20151208T035513Z/pool/main/z/z3/libz3-dev_4.4.0-5_amd64.deb
+    # wget http://snapshot.debian.org/archive/debian/20151208T035513Z/pool/main/z/z3/libz3-jni_4.4.0-5_amd64.deb
+    # wget http://snapshot.debian.org/archive/debian/20151208T035513Z/pool/main/z/z3/libz3-java_4.4.0-5_all.deb
+    # wget http://snapshot.debian.org/archive/debian/20151208T035513Z/pool/main/z/z3/z3_4.4.0-5_amd64.deb
 
-    for pkg in libz3-dev libz3-jni libz3-java z3; do
-	sudo dpkg --install $pkg*.deb
-    done
+    # for pkg in libz3-dev libz3-jni libz3-java z3; do
+    # 	sudo dpkg --install $pkg*.deb
+    # done
+
+    wget https://github.com/Z3Prover/z3/releases/download/z3-4.4.1/z3-4.4.1-x64-ubuntu-14.04.zip
+    unzip z3-4.4.1-x64-ubuntu-14.04.zip
+    rm z3-4.4.1-x64-ubuntu-14.04.zip
+    cd z3-4.4.1-x64-ubuntu-14.04/bin
+    sudo mv z3 /usr/bin/
+    sudo mv libz3* /usr/lib/
+    sudo mv com.microsoft.z3.jar /usr/share/java/
+    sudo ldconfig
+    cd -
+    rm -rf z3-4.4.1-x64-ubuntu-14.04
 
     if [ -f "~/.m2" ]; then
 	rm ~/.m2
@@ -101,7 +112,7 @@ if [ ${INSTALL_Z3} -eq 1 ]; then
     mkdir -p ~/.m2/repository
     
     mvn install:install-file -Dfile=/usr/share/java/com.microsoft.z3.jar \
-	-DgroupId=com.microsoft -DartifactId=z3 -Dversion=4.4.0 \
+	-DgroupId=com.microsoft -DartifactId=z3 -Dversion=4.4.1 \
 	-Dpackaging=jar
 fi
 
