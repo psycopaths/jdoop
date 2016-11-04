@@ -93,16 +93,21 @@ if [ ${INSTALL_Z3} -eq 1 ]; then
     # 	sudo dpkg --install $pkg*.deb
     # done
 
-    wget https://github.com/Z3Prover/z3/releases/download/z3-4.4.1/z3-4.4.1-x64-ubuntu-14.04.zip
-    unzip z3-4.4.1-x64-ubuntu-14.04.zip
-    rm z3-4.4.1-x64-ubuntu-14.04.zip
-    cd z3-4.4.1-x64-ubuntu-14.04/bin
+    CURR_DIR=$(pwd)
+    TMP_DIR=$(mktemp --directory)
+    cd ${TMP_DIR}
+
+    Z3_VERSION=z3-4.4.1-x64-ubuntu-14.04
+    Z3_ARCHIVE=${Z3_VERSION}.zip
+    wget https://github.com/Z3Prover/z3/releases/download/z3-4.4.1/${Z3_ARCHIVE}
+    unzip ${Z3_ARCHIVE}
+    cd ${Z3_VERSION}/bin
     sudo mv z3 /usr/bin/
     sudo mv libz3* /usr/lib/
     sudo mv com.microsoft.z3.jar /usr/share/java/
     sudo ldconfig
-    cd -
-    rm -rf z3-4.4.1-x64-ubuntu-14.04
+    cd ${CURR_DIR}
+    rm -rf ${TMP_DIR}
 
     if [ -f "~/.m2" ]; then
 	rm ~/.m2
