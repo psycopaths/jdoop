@@ -49,7 +49,7 @@ if [ ${INSTALL_PACKAGES} -eq 1 ]; then
     echo 'linux-image-3.16.0-4-amd64 hold' | sudo dpkg --set-selections
     
     sudo apt-get update
-    dependencies="git mercurial ant ant-optional openjdk-8-jre openjdk-8-jre-headless openjdk-8-jdk antlr3 libguava-java python maven wget unzip coreutils"
+    dependencies="git mercurial ant ant-optional openjdk-8-jre openjdk-8-jre-headless openjdk-8-jdk antlr3 libguava-java python maven wget unzip libgomp1"
     sudo apt-get install --assume-yes $dependencies
 
     # Set Java 8 as the default Java version
@@ -73,23 +73,32 @@ fi
 
 if [ ${INSTALL_Z3} -eq 1 ]; then
 
-    # z3 has been packaged only for Debian Stretch (Debian 9), so we
-    # will download its binary packages from a Stretch snapshot
-    # archive.
+    if [ -z "$Z3_DIR" ] || [ ! -d "$Z3_DIR" ]; then
+	echo "The Z3_DIR environment variable is empty or not a valid directory."
+	exit 1
+    fi
+
+    # This is my own build of Z3. It removes a buggy line in Z3's Debian
+    # source package (in the debian/rules file) that makes it fail to link
+    # Java bindings properly. See a corresponding bug report for more
+    # information:
     #
-    # Note we're using version 4.4.0-5 as 4.4.1 Debian builds (prior
-    # to and including 4.4.1-0.5) have faulty libz3java.so that breaks
-    # jconstraints-z3 (jconstraints-z3 reports it cannot find the
-    # library on standard paths (including LD_LIBRARY_PATH and
-    # java.library.path)).
+    # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=842892
+    #
+    # Removing the line works around the bug, though without SONAMEs in
+    # shared libraries, hence not according to Debian standards.
+    #
+    # The package was built in Debian Stretch from the following mirror:
+    #
+    # http://snapshot.debian.org/archive/debian/20161107T153538Z/
+    #
+    # You can find the source package at:
+    # https://gitlab.com/mdimjasevic/z3-4.4.1-deb-src
 
-    # 4.4.0-5
-    wget http://snapshot.debian.org/archive/debian/20151208T035513Z/pool/main/z/z3/libz3-dev_4.4.0-5_amd64.deb
-    wget http://snapshot.debian.org/archive/debian/20151208T035513Z/pool/main/z/z3/libz3-jni_4.4.0-5_amd64.deb
-    wget http://snapshot.debian.org/archive/debian/20151208T035513Z/pool/main/z/z3/libz3-java_4.4.0-5_all.deb
-    wget http://snapshot.debian.org/archive/debian/20151208T035513Z/pool/main/z/z3/z3_4.4.0-5_amd64.deb
+    CURR_DIR=$(pwd)
+    cd ${Z3_DIR}
 
-    for pkg in libz3-dev libz3-jni libz3-java z3; do
+    for pkg in libz3-4 libz3-dev libz3-jni libz3-java z3; do
 	sudo dpkg --install $pkg*.deb
     done
 
@@ -101,8 +110,10 @@ if [ ${INSTALL_Z3} -eq 1 ]; then
     mkdir -p ~/.m2/repository
     
     mvn install:install-file -Dfile=/usr/share/java/com.microsoft.z3.jar \
-	-DgroupId=com.microsoft -DartifactId=z3 -Dversion=4.4.0 \
+	-DgroupId=com.microsoft -DartifactId=z3 -Dversion=4.4.1 \
 	-Dpackaging=jar
+
+    cd ${CURR_DIR}
 fi
 
 # Install JPF modules
@@ -153,7 +164,6 @@ if [ ${INSTALL_JDART} -eq 1 ]; then
     cd ${jconstraints_z3_dir}
     git checkout 1a31c98 # This is the jconstraints-z3-0.9.0 tag as of
 			 # Aug 23, 2016
-    sed -i -e 's/4\.4\.1/4\.4\.0/g' pom.xml
     mvn install
     cp target/jconstraints-z3-0.9.0.jar ~/.jconstraints/extensions
 
