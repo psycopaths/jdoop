@@ -26,6 +26,7 @@ PROJECT_ROOT=${PROJECT_ROOT:-/mnt/storage/jdart-project}
 # corresponds to yes.
 INSTALL_PACKAGES=${INSTALL_PACKAGES:-1}
 INSTALL_Z3=${INSTALL_Z3:-1}
+Z3_FROM_WEB=${Z3_FROM_WEB:-0}
 INSTALL_JPF_CORE=${INSTALL_JPF_CORE:-1}
 INSTALL_JDART=${INSTALL_JDART:-1}
 
@@ -97,6 +98,14 @@ if [ ${INSTALL_Z3} -eq 1 ]; then
 
     CURR_DIR=$(pwd)
     cd ${Z3_DIR}
+
+    if [ ${Z3_FROM_WEB} -eq 1 ]; then
+	wget http://soarlab.org/files/jdoop/z3/libz3-4_4.4.1-0.3_amd64.deb
+	wget http://soarlab.org/files/jdoop/z3/libz3-dev_4.4.1-0.3_amd64.deb
+	wget http://soarlab.org/files/jdoop/z3/libz3-jni_4.4.1-0.3_amd64.deb
+	wget http://soarlab.org/files/jdoop/z3/libz3-java_4.4.1-0.3_amd64.deb
+	wget http://soarlab.org/files/jdoop/z3/z3_4.4.1-0.3_amd64.deb
+    fi
 
     for pkg in libz3-4 libz3-dev libz3-jni libz3-java z3; do
 	sudo dpkg --install $pkg*.deb
