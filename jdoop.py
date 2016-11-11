@@ -166,20 +166,7 @@ class JDoop:
         config = ConfigParser.RawConfigParser()
         config.read(config_file_name)
 
-        sections = ['jdoop', 'sut', 'tests', 'lib']
-        for section in sections:
-            if not config.has_section(section):
-                if section == 'jdoop':
-                    if params.jpf_core_path is None or params.jdart_path is None:
-                        sys.exit("Both paths to jpf-core and jdart modules have to be specified!")
-                if section == 'sut':
-                    if params.sut_compilation is None:
-                        sys.exit("Directory where class files of the package being tested can be found is not specified!")
-                if section == 'tests':
-                    if params.test_compilation is None:
-                        sys.exit("Directory where generated JUnit tests should be compiled to is not specified!")
-
-        if params.jpf_core_path is None:
+        if params.jpf_core_path == None:
             try:
                 self.jpf_core_path = str(config.get('jdoop', 'jpf-core'))
             except Exception, err:
@@ -187,7 +174,7 @@ class JDoop:
         else:
             self.jpf_core_path = params.jpf_core_path
 
-        if params.jdart_path is None:
+        if params.jdart_path == None:
             try:
                 self.jdart_path = str(config.get('jdoop', 'jdart'))
             except Exception, err:
@@ -195,7 +182,7 @@ class JDoop:
         else:
             self.jdart_path = params.jdart_path
 
-        if params.sut_compilation is None:
+        if params.sut_compilation == None:
             try:
                 self.paths.sut_compilation_dir = str(config.get('sut', 'compilation-directory'))
             except Exception, err:
@@ -203,7 +190,7 @@ class JDoop:
         else:
             self.paths.sut_compilation_dir = params.sut_compilation
 
-        if params.test_compilation is None:
+        if params.test_compilation == None:
             try:
                 self.paths.tests_compilation_dir = str(config.get('tests', 'compilation-directory'))
             except Exception, err:
@@ -211,7 +198,7 @@ class JDoop:
         else:
             self.paths.tests_compilation_dir = params.test_compilation
 
-        if params.junit_path is None:
+        if params.junit_path == None:
             try:
                 self.paths.lib_junit = str(config.get('lib', 'junit'))
             except Exception, err:
@@ -219,7 +206,7 @@ class JDoop:
         else:
             self.paths.lib_junit = params.junit_path
 
-        if params.randoop_path is None:
+        if params.randoop_path == None:
             try:
                 self.paths.lib_randoop = str(config.get('lib', 'randoop'))
             except Exception, err:
@@ -227,7 +214,7 @@ class JDoop:
         else:
             self.paths.lib_randoop = params.randoop_path
 
-        if params.jacoco_path is None:
+        if params.jacoco_path == None:
             try:
                 self.paths.lib_jacoco = str(config.get('lib', 'jacoco'))
             except Exception, err:
