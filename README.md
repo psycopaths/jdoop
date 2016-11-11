@@ -52,7 +52,7 @@ Section `[sut]` has one option: `compilation-directory` specifies a
 directory where class files of the package being tested can be found.
 
 Section `[tests]` has one option: `compilation-directory` specifies a
-directory where should generated JUnit tests be compiled to.
+directory where generated JUnit tests should be compiled to.
 
 Section `[lib]` has three options that specify where various libraries
 can be found. Option `junit` is a path to a JUnit *jar*
@@ -178,7 +178,7 @@ network testbed developed and provided by the
 
 
 # Copyright
-Copyright 2015 Marko Dimjašević
+Copyright 2016 Marko Dimjašević
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
