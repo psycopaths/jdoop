@@ -186,7 +186,7 @@ class JDoop:
             try:
                 self.paths.sut_compilation_dir = str(config.get('sut', 'compilation-directory'))
             except Exception, err:
-                sys.exit("Directory where generated JUnit tests should be compiled to wasn't provided!")
+                sys.exit("A directory where class files of the package being tested can be found wasn't provided!")
         else:
             self.paths.sut_compilation_dir = params.sut_compilation
 
@@ -194,7 +194,7 @@ class JDoop:
             try:
                 self.paths.tests_compilation_dir = str(config.get('tests', 'compilation-directory'))
             except Exception, err:
-                sys.exit("Directory where generated JUnit tests should be compiled to wasn't provided!")
+                sys.exit("A directory where generated JUnit tests should be compiled to wasn't provided!")
         else:
             self.paths.tests_compilation_dir = params.test_compilation
 
