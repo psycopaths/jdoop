@@ -52,7 +52,7 @@ Section `[sut]` has one option: `compilation-directory` specifies a
 directory where class files of the package being tested can be found.
 
 Section `[tests]` has one option: `compilation-directory` specifies a
-directory where should generated JUnit tests be compiled to.
+directory where generated JUnit tests should be compiled to.
 
 Section `[lib]` has three options that specify where various libraries
 can be found. Option `junit` is a path to a JUnit *jar*
@@ -137,6 +137,21 @@ JDoop has several command line parameters:
   not provided, the user can generate the code coverage report
   herself, as described in section *Generating code coverage reports*.
 
+For each of the following options, the option has to be set either on
+the command line or in the configuration file via its equivalent. If
+set on the command line, it overrides the value specified in the
+configuration file.
+
+* `--jpf-core-path` - a path to JPF core
+* `--jdart-path` - a path to the JDart module
+* `--sut-compilation` - a directory where class files of the package
+  being tested can be found
+* `--test-compilation` - a directory where generated JUnit tests
+  should be compiled to
+* `--junit-path` - a path to the JUnit jar archive
+* `--randoop-path` - a path to the Randoop jar archive
+* `--jacoco-path` - a path to the JaCoCo jar archive
+
 # Generating code coverage reports
 
 JDoop has a script that generates a code coverage report for JUnit
@@ -178,7 +193,7 @@ network testbed developed and provided by the
 
 
 # Copyright
-Copyright 2015 Marko Dimjašević
+Copyright 2016 Marko Dimjašević
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

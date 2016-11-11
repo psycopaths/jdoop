@@ -161,26 +161,66 @@ class JDoop:
         self.baseline = False
 
 
-    def read_config_file(self, config_file_name):
+    def read_config_file(self, params):
+        config_file_name = params.configuration_file
         config = ConfigParser.RawConfigParser()
         config.read(config_file_name)
 
-        sections = ['jdoop', 'sut', 'tests', 'lib']
-        for section in sections:
-            if not config.has_section(section):
-                sys.exit("The configuration file does not have the [" + section + "] section!")
+        if params.jpf_core_path == None:
+            try:
+                self.jpf_core_path = str(config.get('jdoop', 'jpf-core'))
+            except Exception, err:
+                sys.exit("A path to the jpf-core module wasn't provided!")
+        else:
+            self.jpf_core_path = params.jpf_core_path
 
-        try:
-            self.jpf_core_path = str(config.get('jdoop', 'jpf-core'))
-            self.jdart_path = str(config.get('jdoop', 'jdart'))
-            self.paths.sut_compilation_dir = str(config.get('sut', 'compilation-directory'))
-            self.paths.tests_compilation_dir = str(config.get('tests', 'compilation-directory'))
-            self.paths.lib_junit = str(config.get('lib', 'junit'))
-            self.paths.lib_randoop = str(config.get('lib', 'randoop'))
-            self.paths.lib_jacoco = str(config.get('lib', 'jacoco'))
-        except Exception, err:
-            print str(err) + " in " + config_file_name
-            sys.exit(1)
+        if params.jdart_path == None:
+            try:
+                self.jdart_path = str(config.get('jdoop', 'jdart'))
+            except Exception, err:
+                sys.exit("A path to the jdart module wasn't provided!")
+        else:
+            self.jdart_path = params.jdart_path
+
+        if params.sut_compilation == None:
+            try:
+                self.paths.sut_compilation_dir = str(config.get('sut', 'compilation-directory'))
+            except Exception, err:
+                sys.exit("A directory where class files of the package being tested can be found wasn't provided!")
+        else:
+            self.paths.sut_compilation_dir = params.sut_compilation
+
+        if params.test_compilation == None:
+            try:
+                self.paths.tests_compilation_dir = str(config.get('tests', 'compilation-directory'))
+            except Exception, err:
+                sys.exit("A directory where generated JUnit tests should be compiled to wasn't provided!")
+        else:
+            self.paths.tests_compilation_dir = params.test_compilation
+
+        if params.junit_path == None:
+            try:
+                self.paths.lib_junit = str(config.get('lib', 'junit'))
+            except Exception, err:
+                sys.exit("Path to the JUnit jar archive wasn't provided!")
+        else:
+            self.paths.lib_junit = params.junit_path
+
+        if params.randoop_path == None:
+            try:
+                self.paths.lib_randoop = str(config.get('lib', 'randoop'))
+            except Exception, err:
+                sys.exit("Path to the Randoop jar archive wasn't provided!")
+        else:
+            self.paths.lib_randoop = params.randoop_path
+
+        if params.jacoco_path == None:
+            try:
+                self.paths.lib_jacoco = str(config.get('lib', 'jacoco'))
+            except Exception, err:
+                sys.exit("Path to the JaCoCo jar archive wasn't provided!")
+        else:
+            self.paths.lib_jacoco = params.jacoco_path
 
 
     def run_randoop(self, unit_tests, classlist, timelimit, dont_terminate = False, use_concrete_values = False):
@@ -562,11 +602,18 @@ if __name__ == "__main__":
     parser.add_argument('--randoop-only', default=False, action="store_true", help='The tool should run Randoop only')
     parser.add_argument('--baseline', default=False, action="store_true", help='The tool should run in the baseline mode')
     parser.add_argument('--generate-report', default=False, action="store_true", help='The tool should generate a code coverage report once it finishes its execution')
+    parser.add_argument('--jpf-core-path', help='Path to the jpf-core module')
+    parser.add_argument('--jdart-path', help='Path to the jdart module')
+    parser.add_argument('--sut-compilation', help='Directory where class files of the package being tested can be found')
+    parser.add_argument('--test-compilation', help='Directory where generated JUnit tests should be compiled to')
+    parser.add_argument('--junit-path', help='Path to the JUnit jar archive')
+    parser.add_argument('--randoop-path', help='Path to the Randoop jar archive')
+    parser.add_argument('--jacoco-path', help='Path to the JaCoCo jar archive')
     params = parser.parse_args()
 
     have_to_finish_by = jdoop.get_clock_starting_time("program") + params.timelimit
 
-    jdoop.read_config_file(params.configuration_file)
+    jdoop.read_config_file(params)
     jdoop.paths.package_path = os.path.normpath(params.package_name.replace(".", "/"))
     jdoop.randoop_only = params.randoop_only
     jdoop.baseline = params.baseline
