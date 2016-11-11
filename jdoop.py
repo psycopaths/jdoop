@@ -626,7 +626,7 @@ if __name__ == "__main__":
 
     have_to_finish_by = jdoop.get_clock_starting_time("program") + params.timelimit
 
-    jdoop.read_config_file(params.configuration_file)
+    jdoop.read_config_file(params)
     jdoop.paths.package_path = os.path.normpath(params.package_name.replace(".", "/"))
     jdoop.randoop_only = params.randoop_only
     jdoop.baseline = params.baseline
