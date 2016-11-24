@@ -19,6 +19,7 @@
 # along with JDoop.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import os
 from command import *
 
 class Report:
@@ -29,6 +30,8 @@ class Report:
         self.classpath = classpath
         self.source_dir = source_dir
         self.build_dir = build_dir
+        self.script_dir = os.path.dirname(os.path.realpath(__file__))
+        self.jacoco_site = os.path.join(os.getcwd(), "jacoco-site")
     
     def run_testing(self, ut_list = None):
 
@@ -37,7 +40,7 @@ class Report:
 
         # Execute unit tests
         for uts in ut_list:
-            code_coverage_command = Command(args = "ant -f jacoco.xml -Darg0=%s -Darg1=%s -Darg2=%s -Darg3=%s -Darg4=%s -Darg5=%s test" % (self.jacoco_path, uts, self.classpath, self.package_path, self.source_dir, self.build_dir))
+            code_coverage_command = Command(args = "ant -f %s -Darg0=%s -Darg1=%s -Darg2=%s -Darg3=%s -Darg4=%s -Darg5=%s -Darg6=%s test" % (os.path.join(self.script_dir, "jacoco.xml"), self.jacoco_path, uts, self.classpath, self.package_path, self.source_dir, self.build_dir, self.jacoco_site))
             code_coverage_command.run()
 
     def run_code_coverage(self):
@@ -46,7 +49,7 @@ class Report:
         self.run_testing(ut_list = self.unit_tests_list[:-1])
 
         # Run tests for the last unit test set and generate a report
-        report_command = Command(args = "ant -f jacoco.xml -Darg0=%s -Darg1=%s -Darg2=%s -Darg3=%s -Darg4=%s -Darg5=%s report" % (self.jacoco_path, self.unit_tests_list[-1], self.classpath, self.package_path, self.source_dir, self.build_dir))
+        report_command = Command(args = "ant -f %s -Darg0=%s -Darg1=%s -Darg2=%s -Darg3=%s -Darg4=%s -Darg5=%s -Darg6=%s report" % (os.path.join(self.script_dir, "jacoco.xml"), self.jacoco_path, self.unit_tests_list[-1], self.classpath, self.package_path, self.source_dir, self.build_dir, self.jacoco_site))
         report_command.run()
 
 
