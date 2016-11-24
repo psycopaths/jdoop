@@ -27,6 +27,7 @@ This build file receives 6 arguments:
 - 4th argument (arg3) is the path of a package, i.e. if a package name is org.example, then arg3=org/example
 - 5th argument (arg4) is the root directory where package sources can be found
 - 6th argument (arg5) is the root directory where package class files can be found
+- 7th argument (arg6) is the directory where the report should be generated to
 
 -->
 
@@ -41,7 +42,7 @@ This build file receives 6 arguments:
     </taskdef>
 
     <target name="test">
-        <jacoco:coverage destfile="./jacoco-site/jacoco.exec">
+        <jacoco:coverage destfile="${arg6}/jacoco.exec">
             <junit fork="true" forkmode="once">
                 <test name="${arg1}" />
                 <classpath path="${arg2}" />
@@ -55,7 +56,7 @@ This build file receives 6 arguments:
             
             <!-- This task needs the collected execution data and ... -->
             <executiondata>
-                <file file="./jacoco-site/jacoco.exec" />
+                <file file="${arg6}/jacoco.exec" />
             </executiondata>
             
             <!-- the class files and optional source files ... -->
@@ -71,8 +72,8 @@ This build file receives 6 arguments:
             </structure>
             
             <!-- to produce reports in different formats. -->
-            <html destdir="./jacoco-site/html" />
-            <xml destfile="./jacoco-site/report.xml" />
+            <html destdir="${arg6}/html" />
+            <xml destfile="${arg6}/report.xml" />
         </jacoco:report>
     </target>
     
