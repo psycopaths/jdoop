@@ -115,31 +115,13 @@ class RandoopRun:
         else:
             additional_params = " --literals-file=concrete-values.txt --literals-level=ALL"
 
-        additional_params += " --forbid-null=false --small-tests=true --testsperfile=1 --check-object-contracts=false"
-
-        # Output generated tests in a serialized form so that they can
-        # be refused in later executions of Randoop
-
-        additional_params += " --output-components=" + self.unit_tests_directory + ".gz"
-
-        # Check if there were previous rounds and reuse serialized
-        # tests if so
-        if self.unit_tests_directory != "tests-round-1":
-            try:
-                round_number = int(self.unit_tests_directory[len("tests-round-"):])
-            except Exception, err:
-                print str(err)
-                sys.exit(1)
-
-            # Add to a pool all tests from all previous rounds
-            for no in range(1, round_number):
-                additional_params += " --componentfile-ser=tests-round-%d.gz" % no
+        additional_params += " --forbid-null=false --small-tests=true --testsperfile=1 --ignore-flaky-tests"
 
         if self.dont_terminate:
-            command = Command(args = "java $JVM_FLAGS -ea -cp " + ":".join([self.paths.lib_randoop, self.paths.lib_junit, self.paths.sut_compilation_dir]) + " randoop.main.Main gentests --classlist=" + self.classlist_filename + " --junit-output-dir=" + self.unit_tests_directory + " --junit-classname=" + self.unit_tests_name + " --timelimit=%s" % self.unit_tests_timelimit + additional_params)
+            command = Command(args = "java $JVM_FLAGS -ea -cp " + ":".join([self.paths.lib_randoop, self.paths.lib_junit, self.paths.sut_compilation_dir]) + " randoop.main.Main gentests --classlist=" + self.classlist_filename + " --junit-output-dir=" + self.unit_tests_directory + " --regression-test-basename=" + self.unit_tests_name + " --timelimit=%s" % self.unit_tests_timelimit + additional_params)
             command.run()
         else:
-            command = CommandWithTimeout(args = "java $JVM_FLAGS -ea -cp " + ":".join([self.paths.lib_randoop, self.paths.lib_junit, self.paths.sut_compilation_dir]) + " randoop.main.Main gentests --classlist=" + self.classlist_filename + " --junit-output-dir=" + self.unit_tests_directory + " --junit-classname=" + self.unit_tests_name + " --timelimit=%s" % self.unit_tests_timelimit + additional_params)
+            command = CommandWithTimeout(args = "java $JVM_FLAGS -ea -cp " + ":".join([self.paths.lib_randoop, self.paths.lib_junit, self.paths.sut_compilation_dir]) + " randoop.main.Main gentests --classlist=" + self.classlist_filename + " --junit-output-dir=" + self.unit_tests_directory + " --regression-test-basename=" + self.unit_tests_name + " --timelimit=%s" % self.unit_tests_timelimit + additional_params)
             command.run(timeout = int(int(self.unit_tests_timelimit) * 1.1 + 10))
 
 
