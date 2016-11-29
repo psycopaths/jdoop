@@ -55,9 +55,10 @@ Section `[tests]` has one option: `compilation-directory` specifies a
 directory where generated JUnit tests should be compiled to.
 
 Section `[lib]` has three options that specify where various libraries
-can be found. Option `junit` is a path to a JUnit *jar*
-archive. Option `randoop` is a path to a Randoop *jar*
-archive. Finally, option `jacoco` is a path to a JaCoCo *jar* archive.
+can be found. Option `junit` is a path to a JUnit *jar* archive, while
+`hamcrest` is a path to a Hamcrest core *jar* archive. . Option
+`randoop` is a path to a Randoop *jar* archive. Finally, option
+`jacoco` is a path to a JaCoCo *jar* archive.
 
 
 # Usage
@@ -149,6 +150,7 @@ configuration file.
 * `--test-compilation` - a directory where generated JUnit tests
   should be compiled to
 * `--junit-path` - a path to the JUnit jar archive
+* `--hamcrest-path` - a path to the Hamcrest core jar archive
 * `--randoop-path` - a path to the Randoop jar archive
 * `--jacoco-path` - a path to the JaCoCo jar archive
 
