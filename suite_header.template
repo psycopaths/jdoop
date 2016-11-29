@@ -1,19 +1,9 @@
-import junit.framework.*;
-import junit.textui.*;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+import org.junit.runners.Suite.SuiteClasses;
 
-public class $classname extends TestCase {
-
-  public static void main(String[] args) {
-    TestRunner runner = new TestRunner();
-    TestResult result = runner.doRun(suite(), false);
-    if (! result.wasSuccessful()) {
-      System.exit(1);
-    }
-  }
-
-  public $classname(String name) {
-    super(name);
-  }
-
-  public static Test suite() {
-    TestSuite result = new TestSuite();
+@RunWith(Suite.class)
+@SuiteClasses({
+$classes
+})
+public class $classname { }

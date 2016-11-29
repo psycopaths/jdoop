@@ -18,10 +18,6 @@
 # You should have received a copy of the GNU General Public License
 # along with JDoop.  If not, see <http://www.gnu.org/licenses/>.
 
-# We assume that Randoop doesn't "prettify" variable names, i.e. the
-# assumption is that variable names are of var<N> form such as var0,
-# var1, var2, etc.
-
 
 import re
 import sys, os, errno, fileinput
@@ -33,6 +29,8 @@ class Callable:
 
 class Literal:
     def represents_int(s):
+        if s == "":
+            return False
         try:
             if s[0] == "(":
                 int(s[1:-1])
@@ -43,6 +41,9 @@ class Literal:
             return False
 
     def represents_long(s):
+        if s == "":
+            return False
+
         expr = s
 
         if s[0] == "(" and s[-1] == ")":
@@ -57,6 +58,9 @@ class Literal:
             return False
 
     def represents_float(s):
+        if s == "":
+            return False
+
         expr = s
 
         if s[0] == "(" and s[-1] == ")":
@@ -71,6 +75,9 @@ class Literal:
             return False
 
     def represents_double(s):
+        if s == "":
+            return False
+
         expr = s
 
         if s[0] == "(" and s[-1] == ")":
@@ -90,6 +97,9 @@ class Literal:
         return s == "true" or s == "false"
 
     def represents_string(s):
+        if s == "":
+            return False
+
         return s[0] == '"' and s[-1] == '"'
 
     def represents_primitive(s):
@@ -188,7 +198,6 @@ class SymbolicUnitTests:
         self.output_file.append("// This is an automatically generated file")
         self.output_file.append("package " + self.package_name + ";\n")
         self.output_file.append("import gov.nasa.jpf.jdart.Symbolic;")
-        self.output_file.append("import junit.framework.*;\n")
         self.method_name = None
 
     def finalize_and_write_output_file(self):
@@ -333,6 +342,9 @@ class SymbolicUnitTests:
                 if re.search("public class", line):
                     continue
 
+                if re.search("@Test", line.lstrip()):
+                    continue
+
                 # If this is a line that imports JUnit classes, a line
                 # that defines a debugging variable, or the final line
                 # that only has a closing bracket of the class, skip it
@@ -355,7 +367,7 @@ class SymbolicUnitTests:
                     # extract method name and store it for later usage
                     self.method_name = line.lstrip().split(" ")[2][:-2]
                     has_seen_class_name = True
-                    self.output_file.append("public class " + self.class_name + " extends TestCase {\n")
+                    self.output_file.append("public class " + self.class_name + " {\n")
                     self.output_file.append("  public static boolean debug = false;\n")
 
                     sym_variables_def_pos = len(self.output_file)
@@ -365,7 +377,10 @@ class SymbolicUnitTests:
                     continue
 
                 # Skip JUnit assertion statements
-                if re.search("^assertTrue\(", line.lstrip()) or re.search("^assertNotNull\(", line.lstrip()) or re.search("^assertNull\(", line.lstrip()):
+                if (re.search(".*assertTrue\(", line.lstrip())
+                    or re.search(".*assertNotNull\(", line.lstrip())
+                    or re.search(".*assertNull\(", line.lstrip())
+                    or re.search(".*org.junit.Assert.fail", line.lstrip())):
                     # self.output_file.append(line)
                     continue
 
@@ -379,7 +394,9 @@ class SymbolicUnitTests:
 
                 # This matches only method calls (both static and
                 # non-static), and not constructors
-                if re.search("^var[0-9]+\.", line.lstrip()) == None or re.search("^.*\..*\(.*\) *;$", line.lstrip().rstrip()):
+                if ((re.search(".* = ", line.lstrip()) == None
+                    or re.search("^.*\..*\(.*\) *;$", line.lstrip().rstrip()))
+                    and not (re.search(".* = new ", line.lstrip()))):
 
                     non_interesting = True
 
@@ -390,11 +407,9 @@ class SymbolicUnitTests:
                         non_interesting = False
 
                     # Check if this is a new variable declaration
-                    elif re.search(".* var[0-9]+ =", line):
+                    elif re.search(".* = ", line):
 
                         non_interesting = False
-
-                        # Check if it is a static method call or a constructor call
 
                         # Check if it is a new array line
                         if re.search("= new", line) and lpar == -1 and rpar == -1:
@@ -405,16 +420,16 @@ class SymbolicUnitTests:
                             non_interesting = True
 
                     if non_interesting:
+                        if re.search("public void", line):
+                            self.output_file.append("  @Test")
                         self.output_file.append(line)
                         continue
 
                 # Since we got this far, we must be in a method call line or a constructor call line
 
-                assert (lpar != -1 and rpar != -1)
-
                 # skip if there are no parameters, i.e. just print out the
                 # line
-                if lpar + 1 == rpar:
+                if lpar + 1 == rpar or (lpar == -1 and rpar == -1):
                     self.output_file.append(line)
                     continue
 
@@ -427,6 +442,9 @@ class SymbolicUnitTests:
                 symbolic_name = "sym_var%d" % sym_var_counter
 
                 for i in range(len(parameters)):
+
+                    if parameters[i] == "":
+                        continue
 
                     definition_line = ""
                     is_symbolic = False

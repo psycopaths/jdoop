@@ -28,6 +28,7 @@ import time
 import sets
 import math
 from collections import deque
+import re
 
 
 from symbolize_tests import *
@@ -87,7 +88,7 @@ class Paths:
 
 
 class RandoopRun:
-    def __init__(self, unit_tests_name, unit_tests_directory, classlist_filename, timelimit, paths, randoop_only, dont_terminate = False, use_concrete_values = False):
+    def __init__(self, unit_tests_name, unit_tests_directory, classlist_filename, timelimit, paths, randoop_only, dont_terminate = False, use_concrete_values = False, seed = 0):
         self.unit_tests_name = unit_tests_name
         self.unit_tests_directory = unit_tests_directory
         self.classlist_filename = classlist_filename
@@ -96,6 +97,7 @@ class RandoopRun:
         self.dont_terminate = dont_terminate
         self.use_concrete_values = use_concrete_values
         self.randoop_only = randoop_only
+        self.seed = seed
 
 
     def run(self):
@@ -115,31 +117,14 @@ class RandoopRun:
         else:
             additional_params = " --literals-file=concrete-values.txt --literals-level=ALL"
 
-        additional_params += " --forbid-null=false --small-tests=true --testsperfile=1 --check-object-contracts=false"
-
-        # Output generated tests in a serialized form so that they can
-        # be refused in later executions of Randoop
-
-        additional_params += " --output-components=" + self.unit_tests_directory + ".gz"
-
-        # Check if there were previous rounds and reuse serialized
-        # tests if so
-        if self.unit_tests_directory != "tests-round-1":
-            try:
-                round_number = int(self.unit_tests_directory[len("tests-round-"):])
-            except Exception, err:
-                print str(err)
-                sys.exit(1)
-
-            # Add to a pool all tests from all previous rounds
-            for no in range(1, round_number):
-                additional_params += " --componentfile-ser=tests-round-%d.gz" % no
+        additional_params += " --forbid-null=false --small-tests=true --testsperfile=1 --ignore-flaky-tests"
+        additional_params += " --randomseed=%i" % self.seed
 
         if self.dont_terminate:
-            command = Command(args = "java $JVM_FLAGS -ea -cp " + ":".join([self.paths.lib_randoop, self.paths.lib_junit, self.paths.sut_compilation_dir]) + " randoop.main.Main gentests --classlist=" + self.classlist_filename + " --junit-output-dir=" + self.unit_tests_directory + " --junit-classname=" + self.unit_tests_name + " --timelimit=%s" % self.unit_tests_timelimit + additional_params)
+            command = Command(args = "java $JVM_FLAGS -ea -cp " + ":".join([self.paths.lib_randoop, self.paths.lib_junit, self.paths.lib_hamcrest, self.paths.sut_compilation_dir]) + " randoop.main.Main gentests --classlist=" + self.classlist_filename + " --junit-output-dir=" + self.unit_tests_directory + " --regression-test-basename=" + self.unit_tests_name + " --timelimit=%s" % self.unit_tests_timelimit + additional_params)
             command.run()
         else:
-            command = CommandWithTimeout(args = "java $JVM_FLAGS -ea -cp " + ":".join([self.paths.lib_randoop, self.paths.lib_junit, self.paths.sut_compilation_dir]) + " randoop.main.Main gentests --classlist=" + self.classlist_filename + " --junit-output-dir=" + self.unit_tests_directory + " --junit-classname=" + self.unit_tests_name + " --timelimit=%s" % self.unit_tests_timelimit + additional_params)
+            command = CommandWithTimeout(args = "java $JVM_FLAGS -ea -cp " + ":".join([self.paths.lib_randoop, self.paths.lib_junit, self.paths.lib_hamcrest, self.paths.sut_compilation_dir]) + " randoop.main.Main gentests --classlist=" + self.classlist_filename + " --junit-output-dir=" + self.unit_tests_directory + " --regression-test-basename=" + self.unit_tests_name + " --timelimit=%s" % self.unit_tests_timelimit + additional_params)
             command.run(timeout = int(int(self.unit_tests_timelimit) * 1.1 + 10))
 
 
@@ -210,6 +195,14 @@ class JDoop:
         else:
             self.paths.lib_junit = params.junit_path
 
+        if params.hamcrest_path == None:
+            try:
+                self.paths.lib_junit = str(config.get('lib', 'hamcrest'))
+            except Exception, err:
+                sys.exit("Path to the Hamcrest jar archive wasn't provided!")
+        else:
+            self.paths.lib_hamcrest = params.hamcrest_path
+
         if params.randoop_path == None:
             try:
                 self.paths.lib_randoop = str(config.get('lib', 'randoop'))
@@ -227,10 +220,10 @@ class JDoop:
             self.paths.lib_jacoco = params.jacoco_path
 
 
-    def run_randoop(self, unit_tests, classlist, timelimit, dont_terminate = False, use_concrete_values = False):
+    def run_randoop(self, unit_tests, classlist, timelimit, dont_terminate = False, use_concrete_values = False, seed = 0):
         """Invokes Randoop"""
 
-        randoop_run = RandoopRun(unit_tests.name, unit_tests.directory, classlist.filename, str(timelimit), self.paths, self.randoop_only, dont_terminate, use_concrete_values)
+        randoop_run = RandoopRun(unit_tests.name, unit_tests.directory, classlist.filename, str(timelimit), self.paths, self.randoop_only, dont_terminate, use_concrete_values, seed)
         randoop_run.run()
 
 
@@ -246,7 +239,7 @@ class JDoop:
         try:
             with open(suite_path, 'r') as f:
                 for line in f:
-                    if line.lstrip().startswith('result.addTest'):
+                    if re.search(".*[0-9]+\.class", line.lstrip()):
                         calls_in_total += 1
         except:
             return []
@@ -278,15 +271,12 @@ class JDoop:
 
         for i in range(int(math.ceil(float(calls_in_total) / n_calls))):
             class_name = unit_tests.name + "_e" + str(i)
+            classes = ",\n".join(
+                ["%s%i.class" % (unit_tests.name, j) for j in range(
+                    n_calls * i, min(n_calls * (i + 1), calls_in_total))])
             with open(os.path.join(unit_tests.directory, class_name + ".java"), 'w') as f:
                 # Put a proper class name into the template
-                f.write(suite_template.substitute(classname=class_name))
-
-                # Write up to n_calls method calls
-                for j in range(n_calls * i, min(n_calls * (i + 1), calls_in_total)):
-                    f.write("    try {\n      result.addTest(new TestSuite(" + unit_tests.name + str(j) + ".class));\n    } catch (Exception e) {\n    }\n")
-                
-                f.write("    return result;\n  }\n\n}\n")
+                f.write(suite_template.substitute(classes=classes, classname=class_name))
 
             ret_list.append(UnitTests(class_name, unit_tests.directory, unit_tests.randooped_package_name))
 
@@ -323,7 +313,7 @@ class JDoop:
         except:
             pass
 
-        compile_tests_command = Command(args = "javac -g -d " + self.paths.tests_compilation_dir + " -classpath " + ":".join([os.path.join(self.jdart_path, "build"), os.path.join(self.jdart_path, "build/annotations/"), self.paths.sut_compilation_dir, self.paths.tests_compilation_dir, self.paths.lib_junit]) + " " + os.path.join("./", unit_tests.randooped_package_name +  "/*java"))
+        compile_tests_command = Command(args = "javac -g -d " + self.paths.tests_compilation_dir + " -classpath " + ":".join([os.path.join(self.jdart_path, "build"), os.path.join(self.jdart_path, "build/annotations/"), self.paths.sut_compilation_dir, self.paths.tests_compilation_dir, self.paths.lib_junit, self.paths.lib_hamcrest]) + " " + os.path.join("./", unit_tests.randooped_package_name +  "/*java"))
         compile_tests_command.run()
 
 
@@ -611,6 +601,7 @@ if __name__ == "__main__":
     parser.add_argument('--sut-compilation', help='Directory where class files of the package being tested can be found')
     parser.add_argument('--test-compilation', help='Directory where generated JUnit tests should be compiled to')
     parser.add_argument('--junit-path', help='Path to the JUnit jar archive')
+    parser.add_argument('--hamcrest-path', help='Path to the Hamcrest jar archive')
     parser.add_argument('--randoop-path', help='Path to the Randoop jar archive')
     parser.add_argument('--jacoco-path', help='Path to the JaCoCo jar archive')
     params = parser.parse_args()
@@ -630,15 +621,16 @@ if __name__ == "__main__":
     classlist = ClassList(params.classlist)
     classlist.write_list_of_classes(params.root, jdoop.paths.package_path)
 
-    unit_tests = UnitTests(name = "Randoop1Test", directory = "tests-round-1", randooped_package_name = "randooped1")
+    unit_tests = UnitTests(name = "Regression1Test", directory = "tests-round-1", randooped_package_name = "randooped1")
 
     # Determine how much time should be given to the first run of
     # Randoop
     timelimit = jdoop.determine_timelimit("Randoop", 1)
 
     # Invoke Randoop to generate unit tests
+    init_seed = 10
     jdoop.start_clock("Randoop #1")
-    jdoop.run_randoop(unit_tests, classlist, timelimit, dont_terminate = True)
+    jdoop.run_randoop(unit_tests, classlist, timelimit, dont_terminate = True, seed = init_seed)
     jdoop.stop_clock("Randoop #1")
 
     # Split up the main unit test suite class if needed. With 1 unit
@@ -656,7 +648,7 @@ if __name__ == "__main__":
     unit_tests_list = new_unit_tests[:]
 
     # A classpath variable needed for code coverage reports
-    classpath = ":".join([jdoop.paths.lib_junit, jdoop.paths.sut_compilation_dir, jdoop.paths.tests_compilation_dir])
+    classpath = ":".join([jdoop.paths.lib_junit, jdoop.paths.lib_hamcrest, jdoop.paths.sut_compilation_dir, jdoop.paths.tests_compilation_dir])
 
     i = 1
     # Instead of using True for an infinite loop, in this way I am
@@ -692,13 +684,13 @@ if __name__ == "__main__":
         # Run Randoop
         timelimit = jdoop.determine_timelimit("Randoop", i)
         if timelimit > 3:
-            unit_tests = UnitTests(name = "Randoop%dTest" % i, directory = "tests-round-%d" % i, randooped_package_name = "randooped%d" % i)
+            unit_tests = UnitTests(name = "Regression%dTest" % i, directory = "tests-round-%d" % i, randooped_package_name = "randooped%d" % i)
 
             jdoop.start_clock("Randoop #%d" % i)
             if params.randoop_only:
-                jdoop.run_randoop(unit_tests, classlist, timelimit, dont_terminate = True)
+                jdoop.run_randoop(unit_tests, classlist, timelimit, dont_terminate = True, seed = init_seed + i)
             else:
-                jdoop.run_randoop(unit_tests, classlist, timelimit, dont_terminate = True, use_concrete_values = True)
+                jdoop.run_randoop(unit_tests, classlist, timelimit, dont_terminate = True, use_concrete_values = True, seed = init_seed + i)
             jdoop.stop_clock("Randoop #%d" % i)
 
             # Split up the main unit test suite class if needed. With 1 unit
