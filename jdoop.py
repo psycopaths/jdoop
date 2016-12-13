@@ -88,7 +88,7 @@ class Paths:
 
 
 class RandoopRun:
-    def __init__(self, unit_tests_name, unit_tests_directory, classlist_filename, timelimit, paths, randoop_only, dont_terminate = False, use_concrete_values = False, seed = 0):
+    def __init__(self, unit_tests_name, unit_tests_directory, classlist_filename, timelimit, paths, randoop_only, dont_terminate = False, use_concrete_values = False, seed = 0, dependencies_classpath = None):
         self.unit_tests_name = unit_tests_name
         self.unit_tests_directory = unit_tests_directory
         self.classlist_filename = classlist_filename
@@ -98,6 +98,7 @@ class RandoopRun:
         self.use_concrete_values = use_concrete_values
         self.randoop_only = randoop_only
         self.seed = seed
+        self.dependencies_classpath = dependencies_classpath
 
 
     def run(self):
@@ -120,11 +121,16 @@ class RandoopRun:
         additional_params += " --forbid-null=false --small-tests=true --testsperfile=1 --ignore-flaky-tests"
         additional_params += " --randomseed=%i" % self.seed
 
+        if self.dependencies_classpath == None:
+            cp = ":".join([self.paths.lib_randoop, self.paths.lib_junit, self.paths.lib_hamcrest, self.paths.sut_compilation_dir])
+        else:
+            cp = ":".join([self.paths.lib_randoop, self.paths.lib_junit, self.paths.lib_hamcrest, self.paths.sut_compilation_dir, self.dependencies_classpath])
+
         if self.dont_terminate:
-            command = Command(args = "java $JVM_FLAGS -ea -cp " + ":".join([self.paths.lib_randoop, self.paths.lib_junit, self.paths.lib_hamcrest, self.paths.sut_compilation_dir]) + " randoop.main.Main gentests --classlist=" + self.classlist_filename + " --junit-output-dir=" + self.unit_tests_directory + " --regression-test-basename=" + self.unit_tests_name + " --timelimit=%s" % self.unit_tests_timelimit + additional_params)
+            command = Command(args = "java $JVM_FLAGS -ea -cp " + cp + " randoop.main.Main gentests --classlist=" + self.classlist_filename + " --junit-output-dir=" + self.unit_tests_directory + " --regression-test-basename=" + self.unit_tests_name + " --timelimit=%s" % self.unit_tests_timelimit + additional_params)
             command.run()
         else:
-            command = CommandWithTimeout(args = "java $JVM_FLAGS -ea -cp " + ":".join([self.paths.lib_randoop, self.paths.lib_junit, self.paths.lib_hamcrest, self.paths.sut_compilation_dir]) + " randoop.main.Main gentests --classlist=" + self.classlist_filename + " --junit-output-dir=" + self.unit_tests_directory + " --regression-test-basename=" + self.unit_tests_name + " --timelimit=%s" % self.unit_tests_timelimit + additional_params)
+            command = CommandWithTimeout(args = "java $JVM_FLAGS -ea -cp " + cp + " randoop.main.Main gentests --classlist=" + self.classlist_filename + " --junit-output-dir=" + self.unit_tests_directory + " --regression-test-basename=" + self.unit_tests_name + " --timelimit=%s" % self.unit_tests_timelimit + additional_params)
             command.run(timeout = int(int(self.unit_tests_timelimit) * 1.1 + 10))
 
 
@@ -144,6 +150,8 @@ class JDoop:
 
         self.randoop_only = False
         self.baseline = False
+
+        self.dependencies_classpath = None
 
 
     def read_config_file(self, params):
@@ -223,7 +231,7 @@ class JDoop:
     def run_randoop(self, unit_tests, classlist, timelimit, dont_terminate = False, use_concrete_values = False, seed = 0):
         """Invokes Randoop"""
 
-        randoop_run = RandoopRun(unit_tests.name, unit_tests.directory, classlist.filename, str(timelimit), self.paths, self.randoop_only, dont_terminate, use_concrete_values, seed)
+        randoop_run = RandoopRun(unit_tests.name, unit_tests.directory, classlist.filename, str(timelimit), self.paths, self.randoop_only, dont_terminate, use_concrete_values, seed, self.dependencies_classpath)
         randoop_run.run()
 
 
@@ -291,8 +299,12 @@ class JDoop:
         except:
             pass
 
+        cp = ":".join([self.paths.sut_compilation_dir, self.paths.lib_junit])
+        if self.dependencies_classpath != None:
+            cp += ":" + self.dependencies_classpath
+
         for unit_tests_suite in unit_tests:
-            compile_tests_command = Command(args = "javac -g -d " + self.paths.tests_compilation_dir + " -classpath " + ":".join([self.paths.sut_compilation_dir, self.paths.lib_junit]) + " " + unit_tests_suite.directory + "/*java")
+            compile_tests_command = Command(args = "javac -g -d " + self.paths.tests_compilation_dir + " -classpath " + cp + " " + unit_tests_suite.directory + "/*java")
             compile_tests_command.run()
 
         # if self.randoop_only:
@@ -359,10 +371,18 @@ class JDoop:
 
     def generate_jpf_conf(self, unit_tests, root_dir):
         """Generates JPF configuration files (.jpf) for JDart"""
-        
-        jpf_configuration_files = CoordinateConfFileGeneration(unit_tests.randooped_package_name, 'classes-to-analyze', ",".join([self.paths.tests_compilation_dir, self.paths.lib_junit]))
-        jpf_configuration_files.run()
 
+        classpath = ",".join([self.paths.tests_compilation_dir, self.paths.lib_junit])
+        if self.dependencies_classpath != None:
+            classpath += "," + self.dependencies_classpath
+
+        class_file = os.path.join(unit_tests.randooped_package_name, 'classes-to-analyze')
+        if os.path.exists(class_file) != True:
+            print "No classes-to-analyze file, hence JDart will not run"
+            return
+
+        jpf_configuration_files = CoordinateConfFileGeneration(unit_tests.randooped_package_name, 'classes-to-analyze', classpath)
+        jpf_configuration_files.run()
 
     def run_jdart(self, unit_tests, root_dir, classlist, path, timelimit, concrete_values_file_name = 'concrete-values.txt', template_filename = 'randoop-format.template'):
         """Calls JDart on the symbolized unit tests and collects concrete values used in the concolic execution"""
@@ -379,7 +399,11 @@ class JDoop:
 
         global_before_size = len(self.concrete_values_all_runs)
 
-        with open(os.path.join(unit_tests.randooped_package_name, "classes-to-analyze")) as f:
+        class_file = os.path.join(unit_tests.randooped_package_name, "classes-to-analyze")
+        if os.path.exists(class_file) != True:
+            return
+
+        with open(class_file) as f:
             for line_nl in f:
                 # Write down the current time
                 current_time = time.time()
@@ -595,6 +619,7 @@ if __name__ == "__main__":
     parser.add_argument('--configuration-file', default='jdoop.ini', help='A configuration file with settings for JDoop')
     parser.add_argument('--randoop-only', default=False, action="store_true", help='The tool should run Randoop only')
     parser.add_argument('--baseline', default=False, action="store_true", help='The tool should run in the baseline mode')
+    parser.add_argument('--classpath', default=None, help='A classpath to dependencies of tested classes')
     parser.add_argument('--generate-report', default=False, action="store_true", help='The tool should generate a code coverage report once it finishes its execution')
     parser.add_argument('--jpf-core-path', help='Path to the jpf-core module')
     parser.add_argument('--jdart-path', help='Path to the jdart module')
@@ -616,6 +641,7 @@ if __name__ == "__main__":
     jdoop.paths.package_path = os.path.normpath(params.package_name.replace(".", "/"))
     jdoop.randoop_only = params.randoop_only
     jdoop.baseline = params.baseline
+    jdoop.dependencies_classpath = params.classpath
 
     # Create a list of classes to be tested
     classlist = ClassList(params.classlist)
@@ -649,6 +675,8 @@ if __name__ == "__main__":
 
     # A classpath variable needed for code coverage reports
     classpath = ":".join([jdoop.paths.lib_junit, jdoop.paths.lib_hamcrest, jdoop.paths.sut_compilation_dir, jdoop.paths.tests_compilation_dir])
+    if jdoop.dependencies_classpath != None:
+        classpath += ":" + jdoop.dependencies_classpath
 
     i = 1
     # Instead of using True for an infinite loop, in this way I am
