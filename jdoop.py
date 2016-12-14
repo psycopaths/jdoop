@@ -113,9 +113,8 @@ class RandoopRun:
 
         # Invoke Randoop. Check if it should use concrete values
 
-        if not self.use_concrete_values:
-            additional_params = ""
-        else:
+        additional_params = ""
+        if self.use_concrete_values and os.path.exists("concrete-values.txt") == True:
             additional_params = " --literals-file=concrete-values.txt --literals-level=ALL"
 
         additional_params += " --forbid-null=false --small-tests=true --testsperfile=1 --ignore-flaky-tests"
@@ -324,8 +323,11 @@ class JDoop:
             os.makedirs(self.paths.tests_compilation_dir)
         except:
             pass
+        cp = ""
+        if self.dependencies_classpath != None:
+            cp = ":" + self.dependencies_classpath
 
-        compile_tests_command = Command(args = "javac -g -d " + self.paths.tests_compilation_dir + " -classpath " + ":".join([os.path.join(self.jdart_path, "build"), os.path.join(self.jdart_path, "build/annotations/"), self.paths.sut_compilation_dir, self.paths.tests_compilation_dir, self.paths.lib_junit, self.paths.lib_hamcrest]) + " " + os.path.join("./", unit_tests.randooped_package_name +  "/*java"))
+        compile_tests_command = Command(args = "javac -g -d " + self.paths.tests_compilation_dir + " -classpath " + ":".join([os.path.join(self.jdart_path, "build"), os.path.join(self.jdart_path, "build/annotations/"), self.paths.sut_compilation_dir, self.paths.tests_compilation_dir, self.paths.lib_junit, self.paths.lib_hamcrest]) + cp + " " + os.path.join("./", unit_tests.randooped_package_name +  "/*java"))
         compile_tests_command.run()
 
 
