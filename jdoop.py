@@ -120,10 +120,10 @@ class RandoopRun:
         additional_params += " --forbid-null=false --small-tests=true --testsperfile=1 --ignore-flaky-tests"
         additional_params += " --randomseed=%i" % self.seed
 
-        if self.dependencies_classpath == None:
-            cp = ":".join([self.paths.lib_randoop, self.paths.lib_junit, self.paths.lib_hamcrest, self.paths.sut_compilation_dir])
-        else:
-            cp = ":".join([self.paths.lib_randoop, self.paths.lib_junit, self.paths.lib_hamcrest, self.paths.sut_compilation_dir, self.dependencies_classpath])
+        cp = ""
+        if self.dependencies_classpath != None:
+            cp = self.dependencies_classpath + ":"
+        cp += ":".join([self.paths.lib_randoop, self.paths.lib_junit, self.paths.lib_hamcrest, self.paths.sut_compilation_dir])
 
         if self.dont_terminate:
             command = Command(args = "java $JVM_FLAGS -ea -cp " + cp + " randoop.main.Main gentests --classlist=" + self.classlist_filename + " --junit-output-dir=" + self.unit_tests_directory + " --regression-test-basename=" + self.unit_tests_name + " --timelimit=%s" % self.unit_tests_timelimit + additional_params)
