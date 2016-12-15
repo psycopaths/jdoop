@@ -707,6 +707,9 @@ if __name__ == "__main__":
         # Run JDart on symbolized unit tests
         timelimit = jdoop.determine_timelimit("JDart")
 
+        if os.path.exists(classlist.filename) != True:
+            classlist.write_list_of_classes(params.root, jdoop.paths.package_path)
+
         jdoop.start_clock("Global run of JDart #%d" % (i-1))
         jdoop.run_jdart(unit_tests, params.root, classlist, jdoop.paths.package_path, timelimit, template_filename = os.path.join(scriptDir, "randoop-format.template"))
         jdoop.stop_clock("Global run of JDart #%d" % (i-1))
@@ -715,6 +718,9 @@ if __name__ == "__main__":
         timelimit = jdoop.determine_timelimit("Randoop", i)
         if timelimit > 3:
             unit_tests = UnitTests(name = "Regression%dTest" % i, directory = "tests-round-%d" % i, randooped_package_name = "randooped%d" % i)
+
+            if os.path.exists(classlist.filename) != True:
+                classlist.write_list_of_classes(params.root, jdoop.paths.package_path)
 
             jdoop.start_clock("Randoop #%d" % i)
             if params.randoop_only:
