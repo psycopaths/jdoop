@@ -123,13 +123,17 @@ class RandoopRun:
         cp = ""
         if self.dependencies_classpath != None:
             cp = self.dependencies_classpath + ":"
-        cp += ":".join([self.paths.lib_randoop, self.paths.lib_junit, self.paths.lib_hamcrest, self.paths.sut_compilation_dir])
+        cp += ":".join([self.paths.sut_compilation_dir, self.paths.lib_junit, self.paths.lib_hamcrest, self.paths.lib_randoop])
 
         if self.dont_terminate:
-            command = Command(args = "java $JVM_FLAGS -ea -cp " + cp + " randoop.main.Main gentests --classlist=" + self.classlist_filename + " --junit-output-dir=" + self.unit_tests_directory + " --regression-test-basename=" + self.unit_tests_name + " --timelimit=%s" % self.unit_tests_timelimit + additional_params)
+            command_str = "java $JVM_FLAGS -ea -cp " + cp + " randoop.main.Main gentests --classlist=" + self.classlist_filename + " --junit-output-dir=" + self.unit_tests_directory + " --regression-test-basename=" + self.unit_tests_name + " --timelimit=%s" % self.unit_tests_timelimit + additional_params
+            print "Starting Randoop: " + command_str
+            command = Command(args = command_str)
             command.run()
         else:
-            command = CommandWithTimeout(args = "java $JVM_FLAGS -ea -cp " + cp + " randoop.main.Main gentests --classlist=" + self.classlist_filename + " --junit-output-dir=" + self.unit_tests_directory + " --regression-test-basename=" + self.unit_tests_name + " --timelimit=%s" % self.unit_tests_timelimit + additional_params)
+            command_str = "java $JVM_FLAGS -ea -cp " + cp + " randoop.main.Main gentests --classlist=" + self.classlist_filename + " --junit-output-dir=" + self.unit_tests_directory + " --regression-test-basename=" + self.unit_tests_name + " --timelimit=%s" % self.unit_tests_timelimit + additional_params
+            print "Starting Randoop: " + command_str
+            command = CommandWithTimeout(args = command_str)
             command.run(timeout = int(int(self.unit_tests_timelimit) * 1.1 + 10))
 
 
@@ -298,9 +302,10 @@ class JDoop:
         except:
             pass
 
-        cp = ":".join([self.paths.sut_compilation_dir, self.paths.lib_junit])
+        cp = ""
         if self.dependencies_classpath != None:
-            cp += ":" + self.dependencies_classpath
+            cp += self.dependencies_classpath + ":"
+        cp += ":".join([self.paths.sut_compilation_dir, self.paths.lib_junit, self.paths.lib_hamcrest])
 
         for unit_tests_suite in unit_tests:
             compile_tests_command = Command(args = "javac -g -d " + self.paths.tests_compilation_dir + " -classpath " + cp + " " + unit_tests_suite.directory + "/*java")
@@ -325,9 +330,10 @@ class JDoop:
             pass
         cp = ""
         if self.dependencies_classpath != None:
-            cp = ":" + self.dependencies_classpath
+            cp = self.dependencies_classpath + ":"
+        cp += ":".join([self.paths.sut_compilation_dir, self.paths.lib_junit, self.paths.lib_hamcrest, os.path.join(self.jdart_path, "build"), os.path.join(self.jdart_path, "build/annotations/"), self.paths.tests_compilation_dir])
 
-        compile_tests_command = Command(args = "javac -g -d " + self.paths.tests_compilation_dir + " -classpath " + ":".join([os.path.join(self.jdart_path, "build"), os.path.join(self.jdart_path, "build/annotations/"), self.paths.sut_compilation_dir, self.paths.tests_compilation_dir, self.paths.lib_junit, self.paths.lib_hamcrest]) + cp + " " + os.path.join("./", unit_tests.randooped_package_name +  "/*java"))
+        compile_tests_command = Command(args = "javac -g -d " + self.paths.tests_compilation_dir + " -classpath " + cp + " " + os.path.join("./", unit_tests.randooped_package_name +  "/*java"))
         compile_tests_command.run()
 
 
@@ -374,9 +380,10 @@ class JDoop:
     def generate_jpf_conf(self, unit_tests, root_dir):
         """Generates JPF configuration files (.jpf) for JDart"""
 
-        classpath = ",".join([self.paths.tests_compilation_dir, self.paths.lib_junit])
+        classpath = ""
         if self.dependencies_classpath != None:
-            classpath += "," + self.dependencies_classpath
+            classpath = self.dependencies_classpath + ","
+        classpath += ",".join([self.paths.tests_compilation_dir, self.paths.lib_junit, self.paths.lib_hamcrest, self.paths.sut_compilation_dir])
 
         class_file = os.path.join(unit_tests.randooped_package_name, 'classes-to-analyze')
         if os.path.exists(class_file) != True:
