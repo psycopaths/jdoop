@@ -44,7 +44,7 @@ class ClassList:
         self.list_of_classes = None
 
 
-    def get_all_java_source_files(self, base, rootdir):
+    def get_all_java_source_files(self, base):
         """Finds all java files in a given directory tree and returns a list of such files"""
 
         if not self.list_of_classes == None:
@@ -52,7 +52,7 @@ class ClassList:
 
         ret = []
         
-        for dirpath, dirnames, filenames in os.walk(os.path.join(base, rootdir)):
+        for dirpath, dirnames, filenames in os.walk(base):
             for name in filenames:
                 if name.endswith('.java'):
                     # No need to worry about abstract classes nor
@@ -61,18 +61,24 @@ class ClassList:
 
                     # Check if this is a meta-package
                     if not name.startswith('package-info'):
-                        ret.append(dirpath[len(os.path.normpath(base)) + 1:].replace("/", ".") + "." + name[:-len(".java")])
+                        classname = name[:-len(".java")]
+                        package_name = dirpath[len(os.path.normpath(base)) + 1:].replace("/", ".")
+                        if package_name == "":
+                            fqdn = classname
+                        else:
+                            fqdn = package_name + "." + classname
+                        ret.append(fqdn)
 
         self.list_of_classes = ret
 
         return ret
 
 
-    def write_list_of_classes(self, root, rel_path):
+    def write_list_of_classes(self, root):
         """Writes to a file a list of classes to be tested by JDoop"""
 
         with open(self.filename, 'w') as f:
-            f.write("\n".join(self.get_all_java_source_files(root, rel_path)) + "\n")
+            f.write("\n".join(self.get_all_java_source_files(root)) + "\n")
         
 
 class UnitTests:
@@ -311,16 +317,6 @@ class JDoop:
             compile_tests_command = Command(args = "javac -g -d " + self.paths.tests_compilation_dir + " -classpath " + cp + " " + unit_tests_suite.directory + "/*java")
             compile_tests_command.run()
 
-        # if self.randoop_only:
-        #     for unit_tests_suite in unit_tests:
-        #         compile_tests_command = Command(args = "javac -g -d " + self.paths.tests_compilation_dir + " -classpath " + ":".join([self.paths.sut_compilation_dir, self.paths.lib_junit]) + " " + unit_tests_suite.directory + "/*java")
-        #         compile_tests_command.run()
-        # else:
-        #     for unit_tests_suite in unit_tests:
-        #         compile_tests_command = CommandWithTimeout(args = "javac -g -d " + self.paths.tests_compilation_dir + " -classpath " + ":".join([self.paths.sut_compilation_dir, self.paths.lib_junit]) + " " + unit_tests_suite.directory + "/*java")
-        #         self.compilation_threads.append([compile_tests_command, unit_tests_suite.name])
-        #         compile_tests_command.run_without_joining()
-
     def compile_symbolic_tests(self, root_dir, unit_tests):
         """Compiles JDart-modified symbolic unit tests"""
 
@@ -393,7 +389,7 @@ class JDoop:
         jpf_configuration_files = CoordinateConfFileGeneration(unit_tests.randooped_package_name, 'classes-to-analyze', classpath)
         jpf_configuration_files.run()
 
-    def run_jdart(self, unit_tests, root_dir, classlist, path, timelimit, concrete_values_file_name = 'concrete-values.txt', template_filename = 'randoop-format.template'):
+    def run_jdart(self, unit_tests, root_dir, classlist, timelimit, concrete_values_file_name = 'concrete-values.txt', template_filename = 'randoop-format.template'):
         """Calls JDart on the symbolized unit tests and collects concrete values used in the concolic execution"""
 
         from string import Template
@@ -490,7 +486,7 @@ class JDoop:
 
         # Write unique concrete values back to the concrete values file
         with open(concrete_values_file_name, 'w') as f:
-            f.write(randoop_template.substitute(classname = classlist.get_all_java_source_files(root_dir, path)[0], values = "\n".join(self.concrete_values_all_runs)))
+            f.write(randoop_template.substitute(classname = classlist.get_all_java_source_files(root_dir)[0], values = "\n".join(self.concrete_values_all_runs)))
 
 
     def run_code_coverage(self, unit_tests_list, package_path):
@@ -621,7 +617,6 @@ if __name__ == "__main__":
     jdoop.start_clock("program")
 
     parser = argparse.ArgumentParser(description='Generates unit tests with Randoop only or with JDoop.')
-    parser.add_argument('--package-name', required=True, help='A Java package with classes to analyze.')
     parser.add_argument('--root', required=True, help='source files root directory')
     parser.add_argument('--classlist', default='classlist.txt', help='Name of a file to write a file list to')
     parser.add_argument('--timelimit', default=120, type=int, help='Timelimit in seconds in which JDoop should finish its execution')
@@ -647,14 +642,13 @@ if __name__ == "__main__":
     scriptDir = os.path.dirname(scriptPath)
 
     jdoop.read_config_file(params)
-    jdoop.paths.package_path = os.path.normpath(params.package_name.replace(".", "/"))
     jdoop.randoop_only = params.randoop_only
     jdoop.baseline = params.baseline
     jdoop.dependencies_classpath = params.classpath
 
     # Create a list of classes to be tested
     classlist = ClassList(params.classlist)
-    classlist.write_list_of_classes(params.root, jdoop.paths.package_path)
+    classlist.write_list_of_classes(params.root)
 
     unit_tests = UnitTests(name = "Regression1Test", directory = "tests-round-1", randooped_package_name = "randooped1")
 
@@ -715,10 +709,10 @@ if __name__ == "__main__":
         timelimit = jdoop.determine_timelimit("JDart")
 
         if os.path.exists(classlist.filename) != True:
-            classlist.write_list_of_classes(params.root, jdoop.paths.package_path)
+            classlist.write_list_of_classes(params.root)
 
         jdoop.start_clock("Global run of JDart #%d" % (i-1))
-        jdoop.run_jdart(unit_tests, params.root, classlist, jdoop.paths.package_path, timelimit, template_filename = os.path.join(scriptDir, "randoop-format.template"))
+        jdoop.run_jdart(unit_tests, params.root, classlist, timelimit, template_filename = os.path.join(scriptDir, "randoop-format.template"))
         jdoop.stop_clock("Global run of JDart #%d" % (i-1))
 
         # Run Randoop
@@ -727,7 +721,7 @@ if __name__ == "__main__":
             unit_tests = UnitTests(name = "Regression%dTest" % i, directory = "tests-round-%d" % i, randooped_package_name = "randooped%d" % i)
 
             if os.path.exists(classlist.filename) != True:
-                classlist.write_list_of_classes(params.root, jdoop.paths.package_path)
+                classlist.write_list_of_classes(params.root)
 
             jdoop.start_clock("Randoop #%d" % i)
             if params.randoop_only:
@@ -779,20 +773,13 @@ if __name__ == "__main__":
     if params.generate_report:
         # Run all tests and let JaCoCo measure coverage
         jdoop.start_clock("Code coverage report")
-        # for unit_tests_suite in unit_tests_list[:-1]:
-        #     report = Report(jdoop.paths.lib_jacoco, [unit_tests_suite], os.path.normpath(jdoop.paths.package_path), classpath, params.root, jdoop.paths.sut_compilation_dir)
-        #     report.run_testing()
-
-        # # Run code coverage for the last one and generate a report
-        # report = Report(jdoop.paths.lib_jacoco, [unit_tests_list[-1]], os.path.normpath(jdoop.paths.package_path), classpath, params.root, jdoop.paths.sut_compilation_dir)
-        # report.run_code_coverage()
 
         for unit_tests_suite in unit_tests_list[:-1]:
-            report = Report(jdoop.paths.lib_jacoco, [unit_tests_suite.name], os.path.normpath(jdoop.paths.package_path), classpath, params.root, jdoop.paths.sut_compilation_dir)
+            report = Report(jdoop.paths.lib_jacoco, [unit_tests_suite.name], classpath, params.root, jdoop.paths.sut_compilation_dir)
             report.run_testing()
 
         # Run code coverage for the last one and generate a report
-        report = Report(jdoop.paths.lib_jacoco, [unit_tests_list[-1].name], os.path.normpath(jdoop.paths.package_path), classpath, params.root, jdoop.paths.sut_compilation_dir)
+        report = Report(jdoop.paths.lib_jacoco, [unit_tests_list[-1].name], classpath, params.root, jdoop.paths.sut_compilation_dir)
         report.run_code_coverage()
 
         jdoop.stop_clock("Code coverage report")
