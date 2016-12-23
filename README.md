@@ -49,7 +49,7 @@ to Java PathFinder (core module), while option `jdart` specifies a
 path to JDart.
 
 Section `[sut]` has one option: `compilation-directory` specifies a
-directory where class files of the package being tested can be found.
+directory where class files of the project being tested can be found.
 
 Section `[tests]` has one option: `compilation-directory` specifies a
 directory where generated JUnit tests should be compiled to.
@@ -63,16 +63,15 @@ can be found. Option `junit` is a path to a JUnit *jar* archive, while
 
 # Usage
 
-To run JDoop, a few parameters need to be passed to it, including a
-package name and where the package's source and class files are. Other
-arguments are optional. For example, to test the
-`org.apache.commons.net` package from the Apache Commons library from
-the [JDoop-examples][2] repository, assuming that JDoop and
-JDoop-examples are on the same directory hierarchy level, run the
-following:
+To run JDoop, a few parameters need to be passed to it, including the
+location of the project's source and class files. Some other arguments
+are optional. For example, to test all classes from the Apache Commons
+Net library from the [JDoop-examples][2] repository, assuming that
+JDoop and JDoop-examples are on the same directory hierarchy level,
+run the following:
 
 ```bash
-python jdoop.py --package-name org.apache.commons.net --root ../jdoop-examples/commons-net/src/main/java --generate-report
+python jdoop.py --root ../jdoop-examples/commons-net/src/main/java --generate-report
 ```
 
 A code coverage report will be generated and can be found in the
@@ -107,12 +106,10 @@ and directories: `clean.sh`.
 
 JDoop has several command line parameters:
 
-* `--package-name` - a required parameter with the name of a package
-  you want to test (e.g. `org.apache.commons.net`).
 * `--root` - a required parameter with a directory where source files
-  of the package are.
+  of the tested project are.
 * `--classlist` - an optional parameter (with the default value
-  `classlist.txt`) where the list of classes from the package will be
+  `classlist.txt`) where the list of classes from the project will be
   written to.
 * `--timelimit`- an optional parameter (with the default value `120`)
   with a time limit for JDoop, in seconds. If `--generate-report`
@@ -145,7 +142,7 @@ configuration file.
 
 * `--jpf-core-path` - a path to JPF core
 * `--jdart-path` - a path to the JDart module
-* `--sut-compilation` - a directory where class files of the package
+* `--sut-compilation` - a directory where class files of the project
   being tested can be found
 * `--test-compilation` - a directory where generated JUnit tests
   should be compiled to
@@ -172,7 +169,7 @@ line, type:
 python report.py --help
 ```
 
-The script takes 6 arguments, where the `--jacocopath` argument is
+The script takes 5 arguments, where the `--jacocopath` argument is
 optional. There is an example package named `branching` in the
 `report-examples/` directory. If you build the example in such a way
 that `.class` files are in the same directory where respective `.java`
@@ -180,7 +177,7 @@ files are, this is how you would generate a code coverage report for
 the example:
 
 ```bash
-python report.py --unittests TestBranching --classpath report-examples/:report-examples/branching/tests/ --sourcepath report-examples/ --packagepath branching --buildpath report-examples/
+python report.py --unittests TestBranching --classpath report-examples/:report-examples/branching/tests/ --sourcepath report-examples/ --buildpath report-examples/
 ```
 
 The `report.py` script will generate a code coverage report in two

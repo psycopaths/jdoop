@@ -24,10 +24,9 @@ This build file receives 6 arguments:
 - 1st argument (arg0) is a path to the JaCoCo library
 - 2nd argument (arg1) is a name of a unit test class
 - 3rd argument (arg2) is classpath. Put here everything needed to run unit tests
-- 4th argument (arg3) is the path of a package, i.e. if a package name is org.example, then arg3=org/example
-- 5th argument (arg4) is the root directory where package sources can be found
-- 6th argument (arg5) is the root directory where package class files can be found
-- 7th argument (arg6) is the directory where the report should be generated to
+- 4th argument (arg3) is the root directory where project source files can be found
+- 5th argument (arg4) is the root directory where project class files can be found
+- 6th argument (arg5) is the directory where the report should be generated to
 
 -->
 
@@ -42,7 +41,7 @@ This build file receives 6 arguments:
     </taskdef>
 
     <target name="test">
-        <jacoco:coverage destfile="${arg6}/jacoco.exec">
+        <jacoco:coverage destfile="${arg5}/jacoco.exec">
             <junit fork="true" forkmode="once">
                 <test name="${arg1}" />
                 <classpath path="${arg2}" />
@@ -56,24 +55,24 @@ This build file receives 6 arguments:
             
             <!-- This task needs the collected execution data and ... -->
             <executiondata>
-                <file file="${arg6}/jacoco.exec" />
+                <file file="${arg5}/jacoco.exec" />
             </executiondata>
             
             <!-- the class files and optional source files ... -->
             <structure name="JaCoCo code coverage report">
                 <classfiles>
-                    <fileset dir="${arg5}">
-                        <include name="${arg3}/**/*.class" />
+                    <fileset dir="${arg4}">
+                        <include name="**/*.class" />
                     </fileset>
                 </classfiles>
                 <sourcefiles encoding="UTF-8">
-                    <fileset dir="${arg4}" />
+                    <fileset dir="${arg3}" />
                 </sourcefiles>
             </structure>
             
             <!-- to produce reports in different formats. -->
-            <html destdir="${arg6}/html" />
-            <xml destfile="${arg6}/report.xml" />
+            <html destdir="${arg5}/html" />
+            <xml destfile="${arg5}/report.xml" />
         </jacoco:report>
     </target>
     
