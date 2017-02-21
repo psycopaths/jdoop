@@ -314,7 +314,7 @@ class JDoop:
         cp += ":".join([self.paths.sut_compilation_dir, self.paths.lib_junit, self.paths.lib_hamcrest])
 
         for unit_tests_suite in unit_tests:
-            compile_tests_command = Command(args = "javac -g -d " + self.paths.tests_compilation_dir + " -classpath " + cp + " " + unit_tests_suite.directory + "/*java")
+            compile_tests_command = Command(args = "find " + unit_tests_suite.directory + """ -name "*.java" -print0 | xargs -0 """ + "javac -g -d " + self.paths.tests_compilation_dir + " -classpath " + cp)
             compile_tests_command.run()
 
     def compile_symbolic_tests(self, root_dir, unit_tests):
