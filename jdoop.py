@@ -311,13 +311,21 @@ class JDoop:
         cp = ""
         if self.dependencies_classpath != None:
             cp += self.dependencies_classpath + ":"
-        cp += ":".join([self.paths.sut_compilation_dir, self.paths.lib_junit, self.paths.lib_hamcrest])
+        cp += ":".join([
+            self.paths.sut_compilation_dir,
+            self.paths.lib_junit,
+            self.paths.lib_hamcrest,
+            self.paths.tests_compilation_dir])
+
+        name_pattern = """-name "*_e*" """
 
         for unit_tests_suite in unit_tests:
-            compile_tests_command = Command(args = "find " + unit_tests_suite.directory + """ -type f -not -name "*_e*" -print0 | xargs -0 """ + "javac -g -d " + self.paths.tests_compilation_dir + " -classpath " + cp)
+            args_first_part = "find " + unit_tests_suite.directory + " -type f "
+            args_last_part  = """-print0 | xargs -0 javac -g -d """ + self.paths.tests_compilation_dir + " -classpath " + cp
+            compile_tests_command = Command(args  = (
+                args_first_part + " -not " + name_pattern + args_last_part + " && " +
+                args_first_part +            name_pattern + args_last_part))
             compile_tests_command.run()
-            compile_suites_command = Command(args = "find " + unit_tests_suite.directory + """ -type f -name "*_e*" -print0 | xargs -0 """ + "javac -g -d " + self.paths.tests_compilation_dir + " -classpath " + cp)
-            compile_suites_command.run()
 
     def compile_symbolic_tests(self, root_dir, unit_tests):
         """Compiles JDart-modified symbolic unit tests"""
