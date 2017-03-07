@@ -82,11 +82,12 @@ class ClassList:
         
 
 class UnitTests:
-    def __init__(self, name = "Randoop1Test", directory = "tests-round-1", randooped_package_name = "randooped"):
+    def __init__(self, name = "Randoop1Test", directory = "tests-round-1", randooped_package_name = "randooped", index_lo = 0, index_hi = 500):
         self.directory = directory
         self.name = name
         self.randooped_package_name = randooped_package_name
-
+        self.index_lo = index_lo
+        self.index_hi = index_hi
 
 class Paths:
     def __init__(self):
@@ -295,7 +296,12 @@ class JDoop:
                 # Put a proper class name into the template
                 f.write(suite_template.substitute(classes=classes, classname=class_name))
 
-            ret_list.append(UnitTests(class_name, unit_tests.directory, unit_tests.randooped_package_name))
+            ret_list.append(UnitTests(
+                class_name,
+                unit_tests.directory,
+                unit_tests.randooped_package_name,
+                n_calls * i,
+                min(n_calls * (i + 1), calls_in_total)))
 
         return ret_list
 
@@ -317,14 +323,18 @@ class JDoop:
             self.paths.lib_hamcrest,
             self.paths.tests_compilation_dir])
 
-        name_pattern = """-name "*_e*" """
-
         for unit_tests_suite in unit_tests:
-            args_first_part = "find " + unit_tests_suite.directory + " -type f "
-            args_last_part  = """-print0 | xargs -0 javac -g -d """ + self.paths.tests_compilation_dir + " -classpath " + cp
-            compile_tests_command = Command(args  = (
-                args_first_part + " -not " + name_pattern + args_last_part + " && " +
-                args_first_part +            name_pattern + args_last_part))
+            suite_base_name = unit_tests_suite.name[:unit_tests_suite.name.find("_e")]
+            source_unit_file_paths = [
+                "%s/%s%i.java" % (unit_tests_suite.directory, suite_base_name,
+                                  j) for j in range(unit_tests_suite.index_lo,
+                                                    unit_tests_suite.index_hi)]
+
+            compile_tests_command = Command(args = (
+                "javac -g -d " + self.paths.tests_compilation_dir +
+                " -classpath " + cp + " " + " ".join(source_unit_file_paths) +
+                " " + "%s/%s.java" % (unit_tests_suite.directory,
+                                      unit_tests_suite.name)))
             compile_tests_command.run()
 
     def compile_symbolic_tests(self, root_dir, unit_tests):
