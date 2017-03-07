@@ -192,7 +192,7 @@ network testbed developed and provided by the
 
 
 # Copyright
-Copyright 2016 Marko Dimjašević
+Copyright 2017 Marko Dimjašević
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
