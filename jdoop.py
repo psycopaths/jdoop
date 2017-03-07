@@ -583,7 +583,6 @@ class JDoop:
         current_time = time.time()
 
         if identifier == "Randoop":
-            randoop_scale_factor = 1.1 # A scale-down factor because Randoop always takes longer
             minimum_time = 45 # seconds
 
             if execution_number == 1:
@@ -597,28 +596,21 @@ class JDoop:
             elif execution_number == 2 and self.baseline:
                 return int(math.ceil(have_to_finish_by - current_time))
 
-            elif execution_number == 4:
-                # This is a Randoop execution by which most of the
-                # concrete values would be generated on average, so we
-                # will give much more time to Randoop than usual
-                default_time = 180 # seconds
-                if have_to_finish_by - current_time > 660: # 11 minutes
-                    default_time = 660
             else:
-                default_time = 45 # seconds
+                default_time = 300 # seconds
 
             if have_to_finish_by - current_time < minimum_time or have_to_finish_by - current_time < default_time:
                 # Let's say it doesn't make sense to run Randoop for
                 # less than 3 seconds
-                return max(int((have_to_finish_by - current_time) / randoop_scale_factor), 3)
+                return max(int(have_to_finish_by - current_time - 5), 3)
 
             elif have_to_finish_by - current_time < 2 * minimum_time and not execution_number == 1:
-                return int((have_to_finish_by - current_time) / randoop_scale_factor)
+                return int(have_to_finish_by - current_time)
             else:
-                return int(default_time / randoop_scale_factor)
+                return default_time
         if identifier == "JDart":
             short_running_time = 20 # seconds
-            normal_running_time = 45 # seconds
+            normal_running_time = 90 # seconds
             minimum_time = normal_running_time + 10 # seconds
             
             if have_to_finish_by - current_time < minimum_time:
@@ -714,7 +706,7 @@ if __name__ == "__main__":
         jdoop.start_clock("Symbolization of unit tests #%d" % (i-1))
         # TODO: Vary number of unit tests to select based on
         # previous performance
-        jdoop.symbolize_unit_tests(unit_tests, count = 30)
+        jdoop.symbolize_unit_tests(unit_tests, count = 1000)
         jdoop.stop_clock("Symbolization of unit tests #%d" % (i-1))
 
         # Generate JPF configuration files
