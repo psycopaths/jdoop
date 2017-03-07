@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright 2015 Marko Dimjašević
+# Copyright 2017 Marko Dimjašević
 #
 # This file is part of JDoop.
 #
