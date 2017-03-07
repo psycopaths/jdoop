@@ -67,7 +67,7 @@ class GenerateConfFile:
             output_file.write("classpath+=,%s\n" % self.classpath)
             output_file.write("\n")
             output_file.write("shell=gov.nasa.jpf.jdart.JDart\n")
-            output_file.write("symbolic.dp=NativeZ3\n")
+            output_file.write("symbolic.dp=z3\n")
             output_file.write("jdart.configs.all_fields_symbolic.symbolic.include=this.*\n")
             output_file.write("\n")
 
