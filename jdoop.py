@@ -241,6 +241,8 @@ class JDoop:
     def run_randoop(self, unit_tests, classlist, timelimit, dont_terminate = False, use_concrete_values = False, seed = 0):
         """Invokes Randoop"""
 
+        if self.randoop_only:
+            seed = 0
         randoop_run = RandoopRun(unit_tests.name, unit_tests.directory, classlist.filename, str(timelimit), self.paths, self.randoop_only, dont_terminate, use_concrete_values, seed, self.dependencies_classpath)
         randoop_run.run()
 
