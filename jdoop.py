@@ -255,14 +255,15 @@ class JDoop:
         import math
         from string import Template
 
-        calls_in_total = 0
+        class_files_count = 0
         suite_path = os.path.join(unit_tests.directory, unit_tests.name + ".java")
 
         try:
             with open(suite_path, 'r') as f:
                 for line in f:
-                    if re.search(".*[0-9]+\.class", line.lstrip()):
-                        calls_in_total += 1
+                    if "0.class" in line:
+                        class_files_count = len(re.findall(',', line)) + 1
+                        break
         except:
             return []
 
@@ -278,19 +279,19 @@ class JDoop:
 
         suite_template = Template(suite_template_str)
 
-        # Split up the main suite file into ceil(calls_in_total / n_calls)
+        # Split up the main suite file into ceil(class_files_count / n_calls)
         # files
 
         ret_list = []
 
         # We assume that unit test classes that Randoop generated are
-        # enumerated from 0 to (calls_in_total - 1)
+        # enumerated from 0 to (class_files_count - 1)
 
-        for i in range(int(math.ceil(float(calls_in_total) / n_calls))):
+        for i in range(int(math.ceil(float(class_files_count) / n_calls))):
             class_name = unit_tests.name + "_e" + str(i)
             classes = ",\n".join(
                 ["%s%i.class" % (unit_tests.name, j) for j in range(
-                    n_calls * i, min(n_calls * (i + 1), calls_in_total))])
+                    n_calls * i, min(n_calls * (i + 1), class_files_count))])
             with open(os.path.join(unit_tests.directory, class_name + ".java"), 'w') as f:
                 # Put a proper class name into the template
                 f.write(suite_template.substitute(classes=classes, classname=class_name))
@@ -300,7 +301,7 @@ class JDoop:
                 unit_tests.directory,
                 unit_tests.randooped_package_name,
                 n_calls * i,
-                min(n_calls * (i + 1), calls_in_total)))
+                min(n_calls * (i + 1), class_files_count)))
 
         return ret_list
 
@@ -815,7 +816,7 @@ if __name__ == "__main__":
         jdoop.compile_tests(unit_tests_list)
         jdoop.stop_clock("Compilation of unit tests")
 
-    if params.generate_report:
+    if params.generate_report and len(unit_tests_list) > 0:
         # Run all tests and let JaCoCo measure coverage
         jdoop.start_clock("Code coverage report")
 
