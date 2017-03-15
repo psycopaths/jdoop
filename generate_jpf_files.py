@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright 2015 Marko Dimjašević
+# Copyright 2017 Marko Dimjašević
 #
 # This file is part of JDoop.
 #
@@ -23,11 +23,15 @@ import re, os
 
 class GenerateConfFile:
 
-    def __init__(self, packagename, classpath):
+    def __init__(self, packagename, classpath, gen_package_name, source_dir,
+                 sym_var_list):
 
         self.class_name = None
         self.package_name = packagename
         self.classpath = classpath
+        self.gen_package_name = gen_package_name
+        self.source_dir = source_dir
+        self.sym_var_list = sym_var_list
 
     def generate_jpf_conf_file(self, input_file_name, output_file_name):
 
@@ -56,9 +60,15 @@ class GenerateConfFile:
                 # Since we got to this point, this is a method definition line
 
                 # Extract the method name
-                method_name = line.lstrip().split(" ")[2][:-2]
+                method_name = line.lstrip().split(" ")[2].split("(")[0]
                 output_file.write("concolic.method=%s\n" % method_name)
-                output_file.write("concolic.method.%s=%s.%s.%s()\n" % (method_name, self.package_name, class_name, method_name))
+                output_file.write("concolic.method.%s=%s.%s.%s(%s)\n" % (
+                    method_name,
+                    self.package_name,
+                    class_name,
+                    method_name,
+                    ",".join([
+                        "%s:%s" % (sym_var.split(" ")[1], sym_var.split(" ")[0]) for sym_var in self.sym_var_list])))
                 method_counter += 1
 
             output_file.write("\n")
@@ -68,7 +78,10 @@ class GenerateConfFile:
             output_file.write("\n")
             output_file.write("shell=gov.nasa.jpf.jdart.JDart\n")
             output_file.write("symbolic.dp=z3\n")
-            output_file.write("jdart.configs.all_fields_symbolic.symbolic.include=this.*\n")
+            output_file.write("\n")
+            output_file.write("jdart.tests.gen=true\n")
+            output_file.write("jdart.tests.pkg=%s\n" % self.gen_package_name)
+            output_file.write("jdart.tests.dir=%s\n" % self.source_dir)
             output_file.write("\n")
 
             # possible log levels: servere, warning, info, config, fine,
@@ -77,21 +90,3 @@ class GenerateConfFile:
             output_file.write("log.config=constraints\n")
 
         output_file.close()
-
-class CoordinateConfFileGeneration:
-    def __init__(self, packagename, classes_to_analyze, classpath):
-        self.packagename = packagename
-        self.classes_to_analyze = classes_to_analyze
-        self.classpath = classpath
-        self.location = packagename.replace(".", os.sep)
-
-    def run(self):
-        with open(os.path.normpath(os.path.join(self.location, self.classes_to_analyze)), 'r') as f:
-            for line_nl in f:
-                class_name = line_nl[:-1]
-
-                whole_path = os.path.join(self.location, class_name + ".java")
-
-                # g = GenerateConfFile('randooped', self.classpath)
-                g = GenerateConfFile(self.packagename, self.classpath)
-                g.generate_jpf_conf_file(whole_path, os.path.join(self.location, class_name + ".jpf"))

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright 2015 Marko Dimjašević
+# Copyright 2017 Marko Dimjašević
 #
 # This file is part of JDoop.
 #
@@ -171,12 +171,10 @@ class Literal:
 
 class SymbolicUnitTests:
 
-    def __init__(self, package_name, list_file, input_file, class_names):
+    def __init__(self, package_name, input_file, class_names):
         self.output_file = None
         self.method_name = None
         self.class_name = class_names[0]
-
-        self.class_names_file = list_file
 
         self.input_file = input_file
 
@@ -197,19 +195,30 @@ class SymbolicUnitTests:
         self.output_file = []
         self.output_file.append("// This is an automatically generated file")
         self.output_file.append("package " + self.package_name + ";\n")
-        self.output_file.append("import gov.nasa.jpf.jdart.Symbolic;")
+        self.sym_var_list = []
         self.method_name = None
+        self.method_def_pos = None
+        self.wrote_test_case = False
 
     def finalize_and_write_output_file(self):
 
         if not re.search("sym_var", " ".join(self.output_file)):
             return
 
+        rand_vals = {
+            'int': '0', 'float': '0.0f', 'double': '0.0', 'boolean': 'false'
+        }
+
+        self.output_file[self.method_def_pos] = self.output_file[self.method_def_pos].replace(
+            "()", "(" + ", ".join(self.sym_var_list) + ")"
+        )
         self.output_file.append("  " + "public static void main(String[] args) throws Throwable {")
 
         self.output_file.append("    " + self.class_name + " tc0 = new " + self.class_name + "();")
         self.output_file.append("    " + "try {")
-        self.output_file.append("      " + "tc0.%s();" % (self.method_name))
+        self.output_file.append("      " + "tc0.%s(%s);" % (
+            self.method_name,
+            ', '.join([rand_vals[var.split(' ')[0]] for var in self.sym_var_list])))
         self.output_file.append("    " + "} catch (Exception e) {")
         self.output_file.append("    " + "}")
         self.output_file.append("  " + "}")
@@ -218,9 +227,9 @@ class SymbolicUnitTests:
 
         with open(os.path.join(self.path, self.class_name + ".java"), 'w') as f:
             f.write("\n".join(self.output_file))
-        
-        with open(os.path.join(self.path, self.class_names_file), 'a') as f:
-            f.write(self.class_name + "\n")
+
+        self.wrote_test_case = True
+
 
     def find_parameter_parantheses(self, line):
 
@@ -324,7 +333,6 @@ class SymbolicUnitTests:
 
     def generate_symbolized_unit_tests(self):
 
-        sym_variables_def_pos = None
         sym_variables_whitespace = None
         method_count = 0
 
@@ -358,7 +366,6 @@ class SymbolicUnitTests:
                     if method_count != 0:
                         self.finalize_and_write_output_file()
                         self.initialize_output_file()
-                        sym_variables_def_pos = None
 
                     method_count += 1
 
@@ -369,8 +376,6 @@ class SymbolicUnitTests:
                     has_seen_class_name = True
                     self.output_file.append("public class " + self.class_name + " {\n")
                     self.output_file.append("  public static boolean debug = false;\n")
-
-                    sym_variables_def_pos = len(self.output_file)
 
                 # Avoid too many empty lines at the beginning of the file
                 if line.lstrip() == "" and not has_seen_class_name:
@@ -422,6 +427,7 @@ class SymbolicUnitTests:
                     if non_interesting:
                         if re.search("public void", line):
                             self.output_file.append("  @Test")
+                            self.method_def_pos = len(self.output_file)
                         self.output_file.append(line)
                         continue
 
@@ -446,7 +452,7 @@ class SymbolicUnitTests:
                     if parameters[i] == "":
                         continue
 
-                    definition_line = ""
+                    var_declaration = ""
                     is_symbolic = False
 
                     prefix = ""
@@ -464,40 +470,37 @@ class SymbolicUnitTests:
                     # string. The order of testing is important
                     if Literal.represents_int(suffix):
                         is_symbolic = True
-                        definition_line = "public int %s = %s;" % (symbolic_name, suffix)
+                        var_declaration = "int %s" % symbolic_name
 
                     # Z3 currently doesn't support longs
                     # elif Literal.represents_long(suffix):
                     #     is_symbolic = True
-                    #     definition_line = "public long %s = %s;" % (symbolic_name, suffix)
+                    #     var_declaration = "public long %s = %s;" % (symbolic_name, suffix)
 
                     elif Literal.represents_float(suffix):
                         is_symbolic = True
-                        definition_line = "public float %s = %s;" % (symbolic_name, suffix)
+                        var_declaration = "float %s" % symbolic_name
 
                     elif Literal.represents_double(suffix):
                         is_symbolic = True
-                        definition_line = "public double %s = %s;" % (symbolic_name, suffix)
+                        var_declaration = "double %s" % symbolic_name
 
                     elif Literal.represents_boolean(suffix):
                         is_symbolic = True
-                        definition_line = "public boolean %s = %s;" % (symbolic_name, suffix)
+                        var_declaration = "boolean %s" % symbolic_name
 
                     # Jdart does not support symbolic strings currently
 
                     # elif Literal.represents_string(suffix):
                     #     is_symbolic = True
-                    #     definition_line = "public String %s = %s;" % (symbolic_name, suffix)
+                    #     var_declaration = "String %s" % symbolic_name
 
                     # If the parameter is made symbolic, create a new
                     # variable in the code by adding two additional code
                     # lines for that purpose
                     if is_symbolic:
                         turned_to_symbolic[i] = prefix + symbolic_name
-                        self.output_file.insert(sym_variables_def_pos, sym_variables_whitespace + '@Symbolic("true")')
-                        sym_variables_def_pos += 1
-                        self.output_file.insert(sym_variables_def_pos, sym_variables_whitespace + definition_line + "\n")
-                        sym_variables_def_pos += 1
+                        self.sym_var_list.append(var_declaration)
                         sym_var_counter += 1
 
                         # Prepare the name for the next symbolic variable

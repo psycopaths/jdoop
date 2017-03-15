@@ -163,6 +163,8 @@ class JDoop:
 
         self.dependencies_classpath = None
 
+        self.darted_count = 0
+
 
     def read_config_file(self, params):
         config_file_name = params.configuration_file
@@ -264,11 +266,6 @@ class JDoop:
         except:
             return []
 
-        # Maybe no splitting needs to be done if there are not too
-        # many unit tests
-        # if calls_in_total < n_calls:
-        #     return [unit_tests]
-
         try:
             os.remove(suite_path)
         except:
@@ -349,7 +346,13 @@ class JDoop:
         cp = ""
         if self.dependencies_classpath != None:
             cp = self.dependencies_classpath + ":"
-        cp += ":".join([self.paths.sut_compilation_dir, self.paths.lib_junit, self.paths.lib_hamcrest, os.path.join(self.jdart_path, "build"), os.path.join(self.jdart_path, "build/annotations/"), self.paths.tests_compilation_dir])
+        cp += ":".join([
+            self.paths.sut_compilation_dir,
+            self.paths.lib_junit,
+            self.paths.lib_hamcrest,
+            os.path.join(self.jdart_path, "build"),
+            os.path.join(self.jdart_path, "build/annotations/"),
+            self.paths.tests_compilation_dir])
 
         compile_tests_command = Command(args = "javac -g -d " + self.paths.tests_compilation_dir + " -classpath " + cp + " " + os.path.join("./", unit_tests.randooped_package_name +  "/*java"))
         compile_tests_command.run()
@@ -386,30 +389,57 @@ class JDoop:
         except OSError, e:
             pass
 
+        classpath = ""
+        if self.dependencies_classpath != None:
+            classpath = self.dependencies_classpath + ","
+        classpath += ",".join([
+            self.paths.tests_compilation_dir,
+            self.paths.lib_junit,
+            self.paths.lib_hamcrest,
+            self.paths.sut_compilation_dir])
+
+        classes_to_analyze = []
+
         for unit_test_index in unit_test_indices:
             # Something is wrong here with this classes-to-analyze. Or
             # maybe not... probably whenever there is a new unit test,
             # it just gets appended to the file. Check that
 
-            symbolic_unit_tests = SymbolicUnitTests(unit_tests.randooped_package_name, "classes-to-analyze", os.path.join(unit_tests.directory, unit_tests.name + str(unit_test_index) +'.java'), ['test' + str(unit_test_index) + 'Class'])
+            class_name = 'test' + str(unit_test_index) + 'Class'
+
+            symbolic_unit_tests = SymbolicUnitTests(
+                unit_tests.randooped_package_name,
+                os.path.join(unit_tests.directory,
+                             unit_tests.name + str(unit_test_index) +'.java'),
+                [class_name])
             symbolic_unit_tests.generate_symbolized_unit_tests()
 
+            if symbolic_unit_tests.wrote_test_case == False:
+                continue
 
-    def generate_jpf_conf(self, unit_tests, root_dir):
-        """Generates JPF configuration files (.jpf) for JDart"""
+            # Generate a JPF configuration file (.jpf) for this
+            # symbolic test case driver
+            whole_path = os.path.join(
+                unit_tests.randooped_package_name.replace(".", os.sep),
+                class_name + ".java")
+            f = GenerateConfFile(
+                unit_tests.randooped_package_name,
+                classpath,
+                "darted%i" % self.darted_count,
+                "darted",
+                symbolic_unit_tests.sym_var_list)
+            f.generate_jpf_conf_file(
+                whole_path,
+                whole_path.replace(".java", ".jpf"))
 
-        classpath = ""
-        if self.dependencies_classpath != None:
-            classpath = self.dependencies_classpath + ","
-        classpath += ",".join([self.paths.tests_compilation_dir, self.paths.lib_junit, self.paths.lib_hamcrest, self.paths.sut_compilation_dir])
+            classes_to_analyze.append(class_name)
+            self.darted_count += 1
 
-        class_file = os.path.join(unit_tests.randooped_package_name, 'classes-to-analyze')
-        if os.path.exists(class_file) != True:
-            print "No classes-to-analyze file, hence JDart will not run"
-            return
+        with open(os.path.join(
+                unit_tests.randooped_package_name,
+                "classes-to-analyze"), 'w') as f:
+            f.write("\n".join(classes_to_analyze))
 
-        jpf_configuration_files = CoordinateConfFileGeneration(unit_tests.randooped_package_name, 'classes-to-analyze', classpath)
-        jpf_configuration_files.run()
 
     def run_jdart(self, unit_tests, root_dir, classlist, timelimit, concrete_values_file_name = 'concrete-values.txt', template_filename = 'randoop-format.template'):
         """Calls JDart on the symbolized unit tests and collects concrete values used in the concolic execution"""
@@ -511,6 +541,31 @@ class JDoop:
             f.write(randoop_template.substitute(classname = classlist.get_all_java_source_files(root_dir)[0], values = "\n".join(self.concrete_values_all_runs)))
 
 
+    def collect_darted_suites(self):
+        """"Finds all test suites generated by JDart"""
+
+        import re
+
+        ret_list = []
+        for i in range(self.darted_count):
+            suite_name = "TestsTest1" # This seems to be JDart's default
+            package_name = "darted%i" % i
+            directory = os.path.join("darted", package_name)
+            if os.path.exists(os.path.join(directory, suite_name + ".java")):
+                index_lo = 10
+                index_hi = 11
+                test_case_file_name = "TestsTest10.java"
+
+                ret_list.append(UnitTests(
+                    suite_name,
+                    directory,
+                    package_name,
+                    index_lo,
+                    index_hi
+                ))
+
+        return ret_list
+
     def run_code_coverage(self, unit_tests_list, package_path):
         """Runs JaCoCo on all unit tests from the list and generates a code coverage report"""
 
@@ -527,8 +582,6 @@ class JDoop:
     def start_clock(self, clock_label):
 
         assert not clock_label in self.clock, "A clock with label %s was already started!" % clock_label
-        # if clock_label in self.clock:
-        #     raise Exception()
 
         start_time = time.time()
         self.clock[clock_label] = [start_time, None]
@@ -537,9 +590,6 @@ class JDoop:
     def stop_clock(self, clock_label):
 
         assert clock_label in self.clock, "No started clock with a label %s!" % clock_label
-
-        # if not clock_label in self.clock:
-        #     raise Exception("Clock %s wasn't even started!" % clock_label)
 
         [start_time, previous_end_time] = self.clock[clock_label]
 
@@ -682,12 +732,7 @@ if __name__ == "__main__":
     #
     new_unit_tests = jdoop.check_and_split_up_suite(unit_tests, template_filename = os.path.join(scriptDir, "suite_header.template"))
 
-    # Compile tests generated by Randoop
-    # if params.generate_report and not params.randoop_only:
-    #     jdoop.compile_tests(new_unit_tests)
-
     # Start creating a list of unit tests
-    # unit_tests_list = [ut.name for ut in new_unit_tests]
     unit_tests_list = new_unit_tests[:]
 
     # A classpath variable needed for code coverage reports
@@ -703,16 +748,12 @@ if __name__ == "__main__":
 
         i += 1
 
-        # if not params.randoop_only:
         # Symbolize unit tests
         jdoop.start_clock("Symbolization of unit tests #%d" % (i-1))
         # TODO: Vary number of unit tests to select based on
         # previous performance
         jdoop.symbolize_unit_tests(unit_tests, count = 1000)
         jdoop.stop_clock("Symbolization of unit tests #%d" % (i-1))
-
-        # Generate JPF configuration files
-        jdoop.generate_jpf_conf(unit_tests, params.root)
 
         # Compile symbolized unit tests
         jdoop.start_clock("Compilation of symbolic unit tests #%d" % (i-1))
@@ -734,6 +775,8 @@ if __name__ == "__main__":
         if timelimit > 3:
             unit_tests = UnitTests(name = "Regression%dTest" % i, directory = "tests-round-%d" % i, randooped_package_name = "randooped%d" % i)
 
+            # In case the system under test deleted the list of
+            # classes, re-create it
             if os.path.exists(classlist.filename) != True:
                 classlist.write_list_of_classes(params.root)
 
@@ -750,11 +793,6 @@ if __name__ == "__main__":
             #
             new_unit_tests = jdoop.check_and_split_up_suite(unit_tests, template_filename = os.path.join(scriptDir, "suite_header.template"))
 
-            # Compile tests generated by Randoop
-            # if params.generate_report:
-            #     jdoop.compile_tests(new_unit_tests)
-
-            # unit_tests_list.extend([ut.name for ut in new_unit_tests])
             unit_tests_list.extend(new_unit_tests)
 
         # Check if we're out of time and break out of the loop if so
@@ -766,23 +804,21 @@ if __name__ == "__main__":
         if jdoop.baseline:
             break
 
+    if jdoop.darted_count > 0:
+        darted_suites = jdoop.collect_darted_suites()
+        unit_tests_list.extend(darted_suites)
+
+        classpath += ":" + ":".join(set([
+            os.path.join(jdoop.paths.tests_compilation_dir, ut.randooped_package_name) for ut in unit_tests_list]))
+        classpath += ":" + ":".join([
+            os.path.join(jdoop.paths.tests_compilation_dir, ut.randooped_package_name) for ut in darted_suites])
+
     jdoop.stop_clock("program")
 
-    # if params.generate_report and not params.randoop_only:
     if params.generate_report:
-        # jdoop.start_clock("Remaining unit test compilation")
         jdoop.start_clock("Compilation of unit tests")
-        # while jdoop.compilation_threads:
-        #     [cmd, name] = jdoop.compilation_threads.popleft()
-        #     cmd.join_thread()
-        # jdoop.stop_clock("Remaining unit test compilation")
-
         jdoop.compile_tests(unit_tests_list)
         jdoop.stop_clock("Compilation of unit tests")
-
-    # if params.generate_report and params.randoop_only:
-    #     jdoop.compile_tests(new_unit_tests)
-        
 
     if params.generate_report:
         # Run all tests and let JaCoCo measure coverage
