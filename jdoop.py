@@ -808,11 +808,6 @@ if __name__ == "__main__":
         darted_suites = jdoop.collect_darted_suites()
         unit_tests_list.extend(darted_suites)
 
-        classpath += ":" + ":".join(set([
-            os.path.join(jdoop.paths.tests_compilation_dir, ut.randooped_package_name) for ut in unit_tests_list]))
-        classpath += ":" + ":".join([
-            os.path.join(jdoop.paths.tests_compilation_dir, ut.randooped_package_name) for ut in darted_suites])
-
     jdoop.stop_clock("program")
 
     if params.generate_report:
