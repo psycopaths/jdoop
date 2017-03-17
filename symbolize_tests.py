@@ -356,7 +356,7 @@ class SymbolicUnitTests:
                 # If this is a line that imports JUnit classes, a line
                 # that defines a debugging variable, or the final line
                 # that only has a closing bracket of the class, skip it
-                if re.search("import junit", line) or re.search("public static boolean debug = false;", line) or line[0:1] == '}' or re.search("if \(debug\)", line):
+                if re.search("import ", line) or re.search("public static boolean debug = false;", line) or line[0:1] == '}' or re.search("if \(debug\)", line) or re.search("NAME_ASCENDING", line):
                     continue
 
                 # Extract the leading whitespace in a line of the first
@@ -426,7 +426,6 @@ class SymbolicUnitTests:
 
                     if non_interesting:
                         if re.search("public void", line):
-                            self.output_file.append("  @Test")
                             self.method_def_pos = len(self.output_file)
                         self.output_file.append(line)
                         continue
