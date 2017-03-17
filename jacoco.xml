@@ -42,7 +42,7 @@ This build file receives 6 arguments:
 
     <target name="test">
         <jacoco:coverage destfile="${arg5}/jacoco.exec">
-            <junit fork="true" forkmode="once">
+            <junit fork="true" forkmode="once" printsummary="yes" showoutput="true">
                 <test name="${arg1}" />
                 <classpath path="${arg2}" />
             </junit>
