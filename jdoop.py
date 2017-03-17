@@ -624,13 +624,11 @@ class JDoop:
                         continue
 
                     if "public class" in line:
-                        # print "In a public class line..."
                         output_lines.extend("@FixMethodOrder(MethodSorters.NAME_ASCENDING)\n")
                         output_lines.extend("public class %s {\n" % tc_class)
                         continue
 
                     if "public void" in line:
-                        # print "In a public void line..."
                         method_name_and_params = line.lstrip().split(' ')[2]
                         output_lines.extend("  @Test\n")
                         output_lines.extend("  public void %s throws Throwable {\n" % method_name_and_params)
