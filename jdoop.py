@@ -741,17 +741,14 @@ class JDoop:
                 return int(have_to_finish_by - current_time)
             else:
                 return default_time
+
         if identifier == "JDart":
-            short_running_time = 20 # seconds
-            normal_running_time = 90 # seconds
-            minimum_time = normal_running_time + 10 # seconds
-            
-            if have_to_finish_by - current_time < minimum_time:
-                if have_to_finish_by - current_time < short_running_time:
-                    return 0
-                return short_running_time
-            else:
-                return normal_running_time
+            normal_running_time = 300 # seconds
+
+            return min(
+                int(have_to_finish_by - current_time),
+                normal_running_time
+            )
 
         return 42
 
