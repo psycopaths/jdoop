@@ -733,7 +733,7 @@ class JDoop:
                 return int(math.ceil(have_to_finish_by - current_time))
 
             else:
-                default_time = 300 # seconds
+                default_time = self.randoop_time
 
             if have_to_finish_by - current_time < minimum_time or have_to_finish_by - current_time < default_time:
                 # Let's say it doesn't make sense to run Randoop for
@@ -746,7 +746,7 @@ class JDoop:
                 return default_time
 
         if identifier == "JDart":
-            normal_running_time = 300 # seconds
+            normal_running_time = self.jdart_time
 
             return min(
                 int(have_to_finish_by - current_time),
@@ -765,6 +765,8 @@ if __name__ == "__main__":
     parser.add_argument('--root', required=True, help='source files root directory')
     parser.add_argument('--classlist', default='classlist.txt', help='Name of a file to write a file list to')
     parser.add_argument('--timelimit', default=120, type=int, help='Timelimit in seconds in which JDoop should finish its execution')
+    parser.add_argument('--randoop-time', default=60, type=int, help='How much time per round should be given to Randoop')
+    parser.add_argument('--jdart-time', default=540, type=int, help='How much time per round should be given to Jdart')
     parser.add_argument('--configuration-file', default='jdoop.ini', help='A configuration file with settings for JDoop')
     parser.add_argument('--randoop-only', default=False, action="store_true", help='The tool should run Randoop only')
     parser.add_argument('--baseline', default=False, action="store_true", help='The tool should run in the baseline mode')
@@ -790,6 +792,8 @@ if __name__ == "__main__":
     jdoop.randoop_only = params.randoop_only
     jdoop.baseline = params.baseline
     jdoop.dependencies_classpath = params.classpath
+    jdoop.randoop_time = params.randoop_time
+    jdoop.jdart_time = params.jdart_time
 
     # Create a list of classes to be tested
     classlist = ClassList(params.classlist)
