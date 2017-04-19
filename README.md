@@ -1,7 +1,7 @@
 # Introduction
 
 JDoop (previously known as JPF-Doop) is a free software testing tool
-for Java libraries. It is based on the [Java PathFinder][8]'s concolic
+for Java software. It is based on the [Java PathFinder][8]'s concolic
 execution engine [JDart][0] and [Randoop][1], a feedback-directed
 random testing engine. More detailed description of JDoop can be found
 in an extended abstract by Marko Dimjašević and Zvonimir Rakamarić:
