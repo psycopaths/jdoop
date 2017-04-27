@@ -178,11 +178,20 @@ if [ ${INSTALL_JDART} -eq 1 ]; then
 
     echo "jconstraints = $jconstraints_dir" >> ${jpf_conf_file}
 
+    # Install jpf-nhandler
+    handler_dir=${PROJECT_ROOT}/nhandler
+    hg clone https://bitbucket.org/nastaran/jpf-nhandler ${handler_dir}
+    cd ${handler_dir}
+    hg update --rev 173 # This is the latest version as of Jul 22, 2015
+    ant
+    echo "jpf-nhandler = $handler_dir" >> ${jpf_conf_file}
+
     # Install JDart
     jdart_dir=${PROJECT_ROOT}/jdart
     git clone https://github.com/psycopaths/jdart.git ${jdart_dir}
     cd ${jdart_dir}
-    git checkout cd5b815 # This is a version as of Aug 29, 2016
+    # git checkout cd5b815 # This is a version as of Aug 29, 2016
+    git checkout 75e68a7 # This is a version with jpf-nhandler
     ant
 
     echo "jpf-jdart = ${jdart_dir}" >> ${jpf_conf_file}
