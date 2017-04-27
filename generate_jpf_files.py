@@ -24,7 +24,7 @@ import re, os
 class GenerateConfFile:
 
     def __init__(self, packagename, classpath, gen_package_name, source_dir,
-                 sym_var_list):
+                 sym_var_list, benchmark_id):
 
         self.class_name = None
         self.package_name = packagename
@@ -32,6 +32,7 @@ class GenerateConfFile:
         self.gen_package_name = gen_package_name
         self.source_dir = source_dir
         self.sym_var_list = sym_var_list
+        self.benchmark_id = benchmark_id
 
     def generate_jpf_conf_file(self, input_file_name, output_file_name):
 
@@ -39,6 +40,9 @@ class GenerateConfFile:
         output_file = open(output_file_name, 'w')
 
         output_file.write("# This is an automatically generated configuration file\n\n")
+
+        output_file.write("@using = jpf-nhandler\n")
+        output_file.write("nhandler.delegateUnhandledNative=true\n")
 
         with open(input_file_name, 'r') as f:
             for line_nl in f:
@@ -76,6 +80,8 @@ class GenerateConfFile:
             output_file.write("\n")
             output_file.write("classpath+=,%s\n" % self.classpath)
             output_file.write("\n")
+            output_file.write("native_classpath=%s\n" % self.classpath)
+            output_file.write("\n")
             output_file.write("shell=gov.nasa.jpf.jdart.JDart\n")
             output_file.write("symbolic.dp=z3\n")
             output_file.write("\n")
@@ -83,6 +89,10 @@ class GenerateConfFile:
             output_file.write("jdart.tests.pkg=%s\n" % self.gen_package_name)
             output_file.write("jdart.tests.dir=%s\n" % self.source_dir)
             output_file.write("\n")
+            if self.benchmark_id != None:
+                output_file.write("jdart.statistics=%s\n" %
+                                  output_file_name.replace(".jpf", ".csv"))
+                output_file.write("jdart.statistics.id=%s\n" % self.benchmark_id)
 
             # possible log levels: servere, warning, info, config, fine,
             # finer, finest

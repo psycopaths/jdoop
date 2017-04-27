@@ -427,7 +427,9 @@ class JDoop:
                 classpath,
                 "darted%i" % self.darted_count,
                 "darted",
-                symbolic_unit_tests.sym_var_list)
+                symbolic_unit_tests.sym_var_list,
+                benchmark_id
+            )
             f.generate_jpf_conf_file(
                 whole_path,
                 whole_path.replace(".java", ".jpf"))
@@ -764,6 +766,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Generates unit tests with Randoop only or with JDoop.')
     parser.add_argument('--root', required=True, help='source files root directory')
     parser.add_argument('--classlist', default='classlist.txt', help='Name of a file to write a file list to')
+    parser.add_argument('--benchmark-id', default=None, help='The ID of a benchmark from the SF110 suite')
     parser.add_argument('--timelimit', default=120, type=int, help='Timelimit in seconds in which JDoop should finish its execution')
     parser.add_argument('--randoop-time', default=60, type=int, help='How much time per round should be given to Randoop')
     parser.add_argument('--jdart-time', default=540, type=int, help='How much time per round should be given to Jdart')
@@ -794,6 +797,7 @@ if __name__ == "__main__":
     jdoop.dependencies_classpath = params.classpath
     jdoop.randoop_time = params.randoop_time
     jdoop.jdart_time = params.jdart_time
+    jdoop.benchmark_id = params.benchmark_id
 
     # Create a list of classes to be tested
     classlist = ClassList(params.classlist)
