@@ -165,6 +165,9 @@ class JDoop:
 
         self.darted_count = 0
 
+        with open("jdart-termination-count.txt", 'w') as f:
+            f.write("0")
+
 
     def read_config_file(self, params):
         config_file_name = params.configuration_file
@@ -428,7 +431,7 @@ class JDoop:
                 "darted%i" % self.darted_count,
                 "darted",
                 symbolic_unit_tests.sym_var_list,
-                benchmark_id
+                self.benchmark_id
             )
             f.generate_jpf_conf_file(
                 whole_path,
