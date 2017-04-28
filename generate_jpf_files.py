@@ -43,6 +43,7 @@ class GenerateConfFile:
 
         output_file.write("@using = jpf-nhandler\n")
         output_file.write("nhandler.delegateUnhandledNative=true\n")
+        output_file.write("nhandler.spec.skip = java.lang.String.*\n\n")
 
         with open(input_file_name, 'r') as f:
             for line_nl in f:
@@ -92,7 +93,7 @@ class GenerateConfFile:
             if self.benchmark_id != None:
                 output_file.write("jdart.statistics=%s\n" %
                                   output_file_name.replace(".jpf", ".csv"))
-                output_file.write("jdart.statistics.id=%s\n" % self.benchmark_id)
+                output_file.write("jdart.statistics.id=%s\n\n" % self.benchmark_id)
 
             # possible log levels: servere, warning, info, config, fine,
             # finer, finest

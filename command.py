@@ -21,6 +21,8 @@
 import subprocess, threading
 import os, signal
 
+count_file = "jdart-termination-count.txt"
+
 class Command:
     def __init__(self, args):
         self.process = None
@@ -54,6 +56,14 @@ class CommandWithTimeout:
                 os.killpg(self.process.pid, signal.SIGTERM)
                 self.thread.join()
                 print 'Timeout Termination: ' + self.args
+                try:
+                    with open(count_file, 'r') as f:
+                        countStr = f.read()
+                except Exception, err:
+                    countStr = "0"
+                count = int(countStr) + 1
+                with open(count_file, 'w') as f:
+                    f.write("%i" % count)
 
     def run(self, timeout = None):
 
