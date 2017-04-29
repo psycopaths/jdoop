@@ -339,117 +339,12 @@ class JDoop:
                                       unit_tests_suite.name)))
             compile_tests_command.run()
 
-    def compile_symbolic_tests(self, root_dir, unit_tests):
-        """Compiles JDart-modified symbolic unit tests"""
 
-        try:
-            os.makedirs(self.paths.tests_compilation_dir)
-        except:
-            pass
-        cp = ""
-        if self.dependencies_classpath != None:
-            cp = self.dependencies_classpath + ":"
-        cp += ":".join([
-            self.paths.sut_compilation_dir,
-            self.paths.lib_junit,
-            self.paths.lib_hamcrest,
-            os.path.join(self.jdart_path, "build"),
-            os.path.join(self.jdart_path, "build/annotations/"),
-            self.paths.tests_compilation_dir])
-
-        compile_tests_command = Command(args = "javac -g -d " + self.paths.tests_compilation_dir + " -classpath " + cp + " " + os.path.join("./", unit_tests.randooped_package_name +  "/*java"))
-        compile_tests_command.run()
-
-
-    def select_unit_test_files(self, unit_tests, count):
-        """Makes a random selection of JUnit tests that have to be symbolized for jDART"""
-
-        import re, random
-
-        dir_list = os.listdir(unit_tests.directory)
-
-        prog = re.compile(unit_tests.name + "[0-9]+\.java")
-        unit_tests_list = filter(prog.match, dir_list)
-
-        # Now select only <count> of them
-
-        if count > len(unit_tests_list):
-            unit_tests_indices = [i for i in range(len(unit_tests_list))]
-        else:
-            unit_tests_indices = random.sample(range(len(unit_tests_list)), count)
-
-        return unit_tests_indices
-
-
-    def symbolize_unit_tests(self, unit_tests, count):
-        """Replaces concrete method input values with symbolic variables in unit tests"""
-
-        unit_test_indices = self.select_unit_test_files(unit_tests, count)
-
-        # Remove the file with class names
-        try:
-            os.remove(os.path.join(unit_tests.randooped_package_name, "classes-to-analyze"))
-        except OSError, e:
-            pass
-
-        classpath = ""
-        if self.dependencies_classpath != None:
-            classpath = self.dependencies_classpath + ","
-        classpath += ",".join([
-            self.paths.tests_compilation_dir,
-            self.paths.lib_junit,
-            self.paths.lib_hamcrest,
-            self.paths.sut_compilation_dir])
-
-        classes_to_analyze = []
-
-        for unit_test_index in unit_test_indices:
-            # Something is wrong here with this classes-to-analyze. Or
-            # maybe not... probably whenever there is a new unit test,
-            # it just gets appended to the file. Check that
-
-            class_name = 'test' + str(unit_test_index) + 'Class'
-
-            symbolic_unit_tests = SymbolicUnitTests(
-                unit_tests.randooped_package_name,
-                os.path.join(unit_tests.directory,
-                             unit_tests.name + str(unit_test_index) +'.java'),
-                [class_name])
-            symbolic_unit_tests.generate_symbolized_unit_tests()
-
-            if symbolic_unit_tests.wrote_test_case == False:
-                continue
-
-            # Generate a JPF configuration file (.jpf) for this
-            # symbolic test case driver
-            whole_path = os.path.join(
-                unit_tests.randooped_package_name.replace(".", os.sep),
-                class_name + ".java")
-            f = GenerateConfFile(
-                unit_tests.randooped_package_name,
-                classpath,
-                "darted%i" % self.darted_count,
-                "darted",
-                symbolic_unit_tests.sym_var_list,
-                self.benchmark_id
-            )
-            f.generate_jpf_conf_file(
-                whole_path,
-                whole_path.replace(".java", ".jpf"))
-
-            classes_to_analyze.append(class_name)
-            self.darted_count += 1
-
-        with open(os.path.join(
-                unit_tests.randooped_package_name,
-                "classes-to-analyze"), 'w') as f:
-            f.write("\n".join(classes_to_analyze))
-
-
-    def run_jdart(self, unit_tests, root_dir, classlist, timelimit, concrete_values_file_name = 'concrete-values.txt', template_filename = 'randoop-format.template'):
+    def run_jdart_loop(self, unit_tests, root_dir, classlist, timelimit, concrete_values_file_name = 'concrete-values.txt', template_filename = 'randoop-format.template'):
         """Calls JDart on the symbolized unit tests and collects concrete values used in the concolic execution"""
 
         from string import Template
+        import re, random
 
         # Write down the time when the method started executing and
         # add timelimit to it. That's the time when the method has to
@@ -461,69 +356,133 @@ class JDoop:
 
         global_before_size = len(self.concrete_values_all_runs)
 
-        class_file = os.path.join(unit_tests.randooped_package_name, "classes-to-analyze")
-        if os.path.exists(class_file) != True:
-            return
 
-        with open(class_file) as f:
-            for line_nl in f:
-                # Write down the current time
-                current_time = time.time()
-                # Exit if we already reached the timelimit
-                if current_time >= finish_time:
-                    break
+        classpath = ""
+        if self.dependencies_classpath != None:
+            classpath = self.dependencies_classpath + ","
+        classpath += ",".join([
+            self.paths.tests_compilation_dir,
+            self.paths.lib_junit,
+            self.paths.lib_hamcrest,
+            self.paths.sut_compilation_dir])
 
-                class_name = line_nl[:-1]
+        compile_cp = ""
+        if self.dependencies_classpath != None:
+            compile_cp = self.dependencies_classpath + ":"
+        compile_cp += ":".join([
+            self.paths.sut_compilation_dir,
+            self.paths.lib_junit,
+            self.paths.lib_hamcrest,
+            os.path.join(self.jdart_path, "build"),
+            os.path.join(self.jdart_path, "build/annotations/"),
+            self.paths.tests_compilation_dir])
 
-                whole_path = os.path.join(unit_tests.randooped_package_name, class_name + ".jpf")
+        # Shuffle the order of test cases to avoid calling JDart on
+        # similar driver programs over and over again
 
-                # Remove any previously written values
-                try:
-                    os.remove(self.concrete_values_temporary_file)
-                except:
-                    pass
+        dir_list = os.listdir(unit_tests.directory)
 
-                jdart = CommandWithTimeout(args=os.path.join(self.jpf_core_path, "bin/jpf") + " " + whole_path)
-                timeout = max(min(10, math.ceil(finish_time - time.time())), 1)
-                sys.stdout.flush()
-                sys.stderr.flush()
-                sys.stderr.write("Starting JDart on %s\n" % whole_path)
-                jdart.run(timeout)
+        prog = re.compile(unit_tests.name + "[0-9]+\.java")
+        unit_tests_list = filter(prog.match, dir_list)
 
-                collected_values = sets.Set()
-                try:
-                    with open(self.concrete_values_temporary_file, 'r') as f:
-                        for line in f:
-                            if ":" in line:
-                              collected_values.add(line[:-1])
-                except:
-                    pass
+        unit_test_indices = range(len(unit_tests_list))
+        shuffled_unit_test_indices = random.sample(unit_test_indices, len(unit_test_indices))
 
-                print "Collected values: " + str(collected_values)
-                print "Global set before adding these values: " + str(self.concrete_values_all_runs)
+        for unit_test_index in shuffled_unit_test_indices:
+            # Write down the current time
+            current_time = time.time()
+            # Exit if we already reached the timelimit
+            if current_time >= finish_time:
+                break
 
-                # Measure a contribution of the just read values to
-                # the global set concrete_values_all_runs
-                before_size = len(self.concrete_values_all_runs)
-                self.concrete_values_all_runs.update(collected_values)
-                after_size  = len(self.concrete_values_all_runs)
+            class_name = 'test' + str(unit_test_index) + 'Class'
 
-                print "Global set after adding these values:  " + str(self.concrete_values_all_runs)
+            symbolic_unit_test = SymbolicUnitTests(
+                unit_tests.randooped_package_name,
+                os.path.join(unit_tests.directory,
+                             unit_tests.name + str(unit_test_index) +'.java'),
+                [class_name])
+            symbolic_unit_test.generate_symbolized_unit_tests()
 
-                # Insert size of the collected_values set and its
-                # contribution to the global set
-                # concrete_values_all_runs
-                self.concrete_values_all_runs_stats.append([len(collected_values), after_size - before_size, unit_tests.name])
+            # Skip a symbolic test case if it hasn't been written to a
+            # file or if it has no symbolic variables
+            if symbolic_unit_test.wrote_test_case == False or symbolic_unit_test.sym_var_list == []:
+                continue
 
-                # Measure a contribution of the just read values to
-                # the local set concrete_values_iteration
-                before_size = len(concrete_values_iteration)
-                concrete_values_iteration.update(collected_values)
-                after_size  = len(concrete_values_iteration)
+            # Generate a JPF configuration file (.jpf) for this
+            # symbolic driver program
+            whole_path = os.path.join(
+                unit_tests.randooped_package_name.replace(".", os.sep),
+                class_name + ".java")
+            jpf_file = GenerateConfFile(
+                unit_tests.randooped_package_name,
+                classpath,
+                "darted%i" % self.darted_count,
+                "darted",
+                symbolic_unit_test.sym_var_list,
+                self.benchmark_id
+            )
+            jpf_file.generate_jpf_conf_file(
+                whole_path,
+                whole_path.replace(".java", ".jpf"))
 
-                # Insert size of the collected_values set and its
-                # contribution to the global set concrete_values
-                concrete_values_iteration_stats.append([len(collected_values), after_size - before_size])
+            # Compile the symbolic test, i.e. the driver program
+            try:
+                os.makedirs(self.paths.tests_compilation_dir)
+            except:
+                pass
+            compile_tests_command = Command(args = "javac -g -d " +
+                                            self.paths.tests_compilation_dir
+                                            + " -classpath " +
+                                            compile_cp + " " +
+                                            whole_path)
+            compile_tests_command.run()
+
+            # Run JDart on the driver program
+            whole_path = whole_path.replace(".java", ".jpf")
+
+            jdart = CommandWithTimeout(args=os.path.join(self.jpf_core_path, "bin/jpf") + " " + whole_path)
+            timeout = max(min(10, math.ceil(finish_time - time.time())), 1)
+            sys.stdout.flush()
+            sys.stderr.flush()
+            sys.stderr.write("Starting JDart on %s\n" % whole_path)
+            jdart.run(timeout)
+
+            collected_values = sets.Set()
+            try:
+                with open(self.concrete_values_temporary_file, 'r') as f:
+                    for line in f:
+                        if ":" in line:
+                            collected_values.add(line[:-1])
+            except:
+                pass
+
+            print "Collected values: " + str(collected_values)
+            print "Global set before adding these values: " + str(self.concrete_values_all_runs)
+
+            # Measure a contribution of the just read values to the
+            # global set concrete_values_all_runs
+            before_size = len(self.concrete_values_all_runs)
+            self.concrete_values_all_runs.update(collected_values)
+            after_size  = len(self.concrete_values_all_runs)
+
+            print "Global set after adding these values:  " + str(self.concrete_values_all_runs)
+
+            # Insert size of the collected_values set and its
+            # contribution to the global set concrete_values_all_runs
+            self.concrete_values_all_runs_stats.append([len(collected_values), after_size - before_size, unit_tests.name])
+
+            # Measure a contribution of the just read values to the
+            # local set concrete_values_iteration
+            before_size = len(concrete_values_iteration)
+            concrete_values_iteration.update(collected_values)
+            after_size  = len(concrete_values_iteration)
+
+            # Insert size of the collected_values set and its
+            # contribution to the global set concrete_values
+            concrete_values_iteration_stats.append([len(collected_values),
+                                                    after_size - before_size])
+
 
         # Collect information on contribution of this iteration to
         # overall concrete values
@@ -840,18 +799,6 @@ if __name__ == "__main__":
 
         i += 1
 
-        # Symbolize unit tests
-        jdoop.start_clock("Symbolization of unit tests #%d" % (i-1))
-        # TODO: Vary number of unit tests to select based on
-        # previous performance
-        jdoop.symbolize_unit_tests(unit_tests, count = 1000)
-        jdoop.stop_clock("Symbolization of unit tests #%d" % (i-1))
-
-        # Compile symbolized unit tests
-        jdoop.start_clock("Compilation of symbolic unit tests #%d" % (i-1))
-        jdoop.compile_symbolic_tests(params.root, unit_tests)
-        jdoop.stop_clock("Compilation of symbolic unit tests #%d" % (i-1))
-
         # Run JDart on symbolized unit tests
         timelimit = jdoop.determine_timelimit("JDart")
 
@@ -859,7 +806,7 @@ if __name__ == "__main__":
             classlist.write_list_of_classes(params.root)
 
         jdoop.start_clock("Global run of JDart #%d" % (i-1))
-        jdoop.run_jdart(unit_tests, params.root, classlist, timelimit, template_filename = os.path.join(scriptDir, "randoop-format.template"))
+        jdoop.run_jdart_loop(unit_tests, params.root, classlist, timelimit, template_filename = os.path.join(scriptDir, "randoop-format.template"))
         jdoop.stop_clock("Global run of JDart #%d" % (i-1))
 
         # Run Randoop
