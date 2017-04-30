@@ -191,8 +191,7 @@ if [ ${INSTALL_JDART} -eq 1 ]; then
     git clone -b feature/statistics https://github.com/psycopaths/jdart.git ${jdart_dir}
     cd ${jdart_dir}
     # git checkout cd5b815 # This is a version as of Aug 29, 2016
-    # git checkout 75e68a7 # This is a version with jpf-nhandler
-    git checkout 7609643 # This is a version with new metrics and statistics
+    git checkout 270af72 # This is a version with new metrics and statistics
     ant
 
     echo "jpf-jdart = ${jdart_dir}" >> ${jpf_conf_file}
