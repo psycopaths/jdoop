@@ -43,7 +43,15 @@ class GenerateConfFile:
 
         output_file.write("@using = jpf-nhandler\n")
         output_file.write("nhandler.delegateUnhandledNative=true\n")
-        output_file.write("nhandler.spec.skip = java.lang.String.*\n\n")
+        to_skip = [
+            "java.lang.String.*",
+            "com.sun.jna.Native.sizeof",
+            "java.util.Random.nextInt"
+        ]
+        output_file.write("\n".join(
+            ["nhandler.spec.skip = %s" % pattern for pattern in to_skip]
+        ))
+        output_file.write("\n\n")
 
         with open(input_file_name, 'r') as f:
             for line_nl in f:
