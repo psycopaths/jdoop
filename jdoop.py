@@ -461,7 +461,7 @@ class JDoop:
             whole_path = whole_path.replace(".java", ".jpf")
 
             jdart = CommandWithTimeout(args=os.path.join(self.jpf_core_path, "bin/jpf") + " " + whole_path)
-            timeout = max(min(10, math.ceil(finish_time - time.time())), 1)
+            timeout = max(min(20, math.ceil(finish_time - time.time())), 1)
             sys.stdout.flush()
             sys.stderr.flush()
             sys.stderr.write("Starting JDart on %s\n" % whole_path)
