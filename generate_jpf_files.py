@@ -93,6 +93,7 @@ class GenerateConfFile:
             output_file.write("\n")
             output_file.write("shell=gov.nasa.jpf.jdart.JDart\n")
             output_file.write("symbolic.dp=z3\n")
+            output_file.write("z3.timeout=2000\n") # 2000 milliseconds
             output_file.write("\n")
             output_file.write("jdart.tests.gen=true\n")
             output_file.write("jdart.tests.pkg=%s\n" % self.gen_package_name)
