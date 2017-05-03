@@ -41,7 +41,7 @@ class GenerateConfFile:
 
         output_file.write("# This is an automatically generated configuration file\n\n")
 
-        output_file.write("@using = jpf-nhandler\n")
+        output_file.write("@using jpf-nhandler\n")
         output_file.write("nhandler.delegateUnhandledNative=true\n")
         to_skip = [
             "java.lang.String.*",
