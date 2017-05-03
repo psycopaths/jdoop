@@ -48,8 +48,8 @@ class GenerateConfFile:
             "com.sun.jna.Native.sizeof",
             "java.util.Random.nextInt"
         ]
-        output_file.write("\n".join(
-            ["nhandler.spec.skip = %s" % pattern for pattern in to_skip]
+        output_file.write("nhandler.spec.skip = " + ",".join(
+            ["%s" % pattern for pattern in to_skip]
         ))
         output_file.write("\n\n")
 
