@@ -367,6 +367,14 @@ class JDoop:
             # Skip a symbolic test case if it hasn't been written to a
             # file or if it has no symbolic variables
             if symbolic_unit_test.wrote_test_case == False or symbolic_unit_test.sym_var_list == []:
+                # Delete this non-needed Java file
+                try:
+                    os.remove(os.path.join(
+                        symbolic_unit_test.path,
+                        symbolic_unit_test.class_name + ".java")
+                    )
+                except:
+                    pass
                 continue
 
             candidates.append(symbolic_unit_test)
