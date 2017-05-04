@@ -141,7 +141,7 @@ class RandoopRun:
             command_str = "java $JVM_FLAGS -ea -cp " + cp + " randoop.main.Main gentests --classlist=" + self.classlist_filename + " --junit-output-dir=" + self.unit_tests_directory + " --regression-test-basename=" + self.unit_tests_name + " --timelimit=%s" % self.unit_tests_timelimit + additional_params
             print "Starting Randoop: " + command_str
             command = CommandWithTimeout(args = command_str)
-            command.run(timeout = int(int(self.unit_tests_timelimit) * 1.1 + 10))
+            command.run(timeout = int(self.unit_tests_timelimit) + 10)
 
 
 class JDoop:
@@ -697,48 +697,28 @@ class JDoop:
         for c in jdoop.clock.iterkeys():
             jdoop.print_clock(c)
 
-    def determine_timelimit(self, identifier, execution_number = None):
+    def determine_timelimit(self, identifier):
         """Determine how much time can and should be spent for a particular task given a global time limit and time left"""
 
         # Write down the current time
         current_time = time.time()
 
         if identifier == "Randoop":
-            minimum_time = 45 # seconds
 
-            if execution_number == 1:
-                default_time = 20 # seconds
-
-                if self.randoop_only:
-                    return int(math.ceil(have_to_finish_by - current_time))
-
-            # If we are in the baseline mode, let Randoop run for the
-            # remaining time
-            elif execution_number == 2 and self.baseline:
+            if self.randoop_only:
                 return int(math.ceil(have_to_finish_by - current_time))
 
-            else:
-                default_time = self.randoop_time
-
-            if have_to_finish_by - current_time < minimum_time or have_to_finish_by - current_time < default_time:
-                # Let's say it doesn't make sense to run Randoop for
-                # less than 3 seconds
-                return max(int(have_to_finish_by - current_time - 5), 3)
-
-            elif have_to_finish_by - current_time < 2 * minimum_time and not execution_number == 1:
-                return int(have_to_finish_by - current_time)
-            else:
-                return default_time
-
-        if identifier == "JDart":
-            normal_running_time = self.jdart_time
-
             return min(
-                int(have_to_finish_by - current_time),
-                normal_running_time
+                int(math.ceil(have_to_finish_by - current_time)),
+                self.randoop_time
             )
 
-        return 42
+        if identifier == "JDart":
+
+            return min(
+                int(math.ceil(have_to_finish_by - current_time)),
+                self.jdart_time
+            )
 
         
 if __name__ == "__main__":
@@ -751,8 +731,8 @@ if __name__ == "__main__":
     parser.add_argument('--classlist', default='classlist.txt', help='Name of a file to write a file list to')
     parser.add_argument('--benchmark-id', default=None, help='The ID of a benchmark from the SF110 suite')
     parser.add_argument('--timelimit', default=120, type=int, help='Timelimit in seconds in which JDoop should finish its execution')
-    parser.add_argument('--randoop-time', default=60, type=int, help='How much time per round should be given to Randoop')
-    parser.add_argument('--jdart-time', default=540, type=int, help='How much time per round should be given to Jdart')
+    parser.add_argument('--randoop-time', default=540, type=int, help='How much time per round should be given to Randoop')
+    parser.add_argument('--jdart-time', default=60, type=int, help='How much time per round should be given to Jdart')
     parser.add_argument('--configuration-file', default='jdoop.ini', help='A configuration file with settings for JDoop')
     parser.add_argument('--randoop-only', default=False, action="store_true", help='The tool should run Randoop only')
     parser.add_argument('--baseline', default=False, action="store_true", help='The tool should run in the baseline mode')
@@ -790,7 +770,7 @@ if __name__ == "__main__":
 
     # Determine how much time should be given to the first run of
     # Randoop
-    timelimit = jdoop.determine_timelimit("Randoop", 1)
+    timelimit = jdoop.determine_timelimit("Randoop")
 
     # Invoke Randoop to generate unit tests
     init_seed = 10
@@ -831,7 +811,7 @@ if __name__ == "__main__":
         jdoop.stop_clock("Global run of JDart #%d" % (i-1))
 
         # Run Randoop
-        timelimit = jdoop.determine_timelimit("Randoop", i)
+        timelimit = jdoop.determine_timelimit("Randoop")
         if timelimit > 3:
             unit_tests = UnitTests(name = "Regression%dTest" % i, directory = "tests-round-%d" % i, randooped_package_name = "randooped%d" % i)
 
