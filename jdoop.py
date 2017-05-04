@@ -441,6 +441,7 @@ class JDoop:
                 symbolic_unit_test.sym_var_list,
                 self.benchmark_id
             )
+            self.darted_count += 1
             jpf_file.generate_jpf_conf_file(
                 whole_path,
                 whole_path.replace(".java", ".jpf"))

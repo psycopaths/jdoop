@@ -190,12 +190,15 @@ class SymbolicUnitTests:
         except OSError as exception:
             if exception.errno != errno.EEXIST:
                 raise
+        self.sym_var_list = []
+        self.sym_var_init_vals = []
 
     def initialize_output_file(self):
         self.output_file = []
         self.output_file.append("// This is an automatically generated file")
         self.output_file.append("package " + self.package_name + ";\n")
         self.sym_var_list = []
+        self.sym_var_init_vals = []
         self.method_name = None
         self.method_def_pos = None
         self.wrote_test_case = False
@@ -205,10 +208,6 @@ class SymbolicUnitTests:
         if not re.search("sym_var", " ".join(self.output_file)):
             return
 
-        rand_vals = {
-            'int': '0', 'float': '0.0f', 'double': '0.0', 'boolean': 'false'
-        }
-
         self.output_file[self.method_def_pos] = self.output_file[self.method_def_pos].replace(
             "()", "(" + ", ".join(self.sym_var_list) + ")"
         )
@@ -217,8 +216,7 @@ class SymbolicUnitTests:
         self.output_file.append("    " + self.class_name + " tc0 = new " + self.class_name + "();")
         self.output_file.append("    " + "try {")
         self.output_file.append("      " + "tc0.%s(%s);" % (
-            self.method_name,
-            ', '.join([rand_vals[var.split(' ')[0]] for var in self.sym_var_list])))
+            self.method_name, ', '.join(self.sym_var_init_vals)))
         self.output_file.append("    " + "} catch (Exception e) {")
         self.output_file.append("    " + "}")
         self.output_file.append("  " + "}")
@@ -464,6 +462,7 @@ class SymbolicUnitTests:
                             suffix = parameters[i][len(prefix):]
                         else:
                             suffix = parameters[i]
+                    concrete_val_str = suffix
 
                     # Check if the current parameter is int, double, bool, or
                     # string. The order of testing is important
@@ -500,6 +499,7 @@ class SymbolicUnitTests:
                     if is_symbolic:
                         turned_to_symbolic[i] = prefix + symbolic_name
                         self.sym_var_list.append(var_declaration)
+                        self.sym_var_init_vals.append(concrete_val_str)
                         sym_var_counter += 1
 
                         # Prepare the name for the next symbolic variable
