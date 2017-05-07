@@ -165,6 +165,8 @@ class JDoop:
 
         self.darted_count = 0
 
+        self.prioritize_drivers = False
+
         with open("jdart-termination-count.txt", 'w') as f:
             f.write("0")
 
@@ -382,6 +384,104 @@ class JDoop:
         return sorted(candidates, key=lambda sym_test: -len(sym_test.sym_var_list))
 
 
+    def shuffle_unit_tests(self, unit_tests):
+        """Returns a shuffled list of unit tests"""
+
+        from random import shuffle
+
+        dir_list = os.listdir(unit_tests.directory)
+        prog = re.compile(unit_tests.name + "[0-9]+\.java")
+        unit_tests_list = filter(prog.match, dir_list)
+        unit_test_indices = range(len(unit_tests_list))
+        shuffle(unit_test_indices)
+
+        return unit_test_indices
+
+
+    def run_driver_with_jdart(self, symbolic_unit_test, package_name, classpath, compile_cp, finish_time):
+        """Runs JDart on a driver program, i.e. a symbolic unit test"""
+
+        # Generate a JPF configuration file (.jpf) for this symbolic
+        # driver program
+        whole_path = os.path.join(
+            package_name.replace(".", os.sep),
+            symbolic_unit_test.class_name + ".java")
+        jpf_file = GenerateConfFile(
+            package_name,
+            classpath,
+            "darted%i" % self.darted_count,
+            "darted",
+            symbolic_unit_test.sym_var_list,
+            self.benchmark_id
+        )
+        self.darted_count += 1
+        jpf_file.generate_jpf_conf_file(
+            whole_path,
+            whole_path.replace(".java", ".jpf"))
+
+        # Compile the symbolic test, i.e. the driver program
+        try:
+            os.makedirs(self.paths.tests_compilation_dir)
+        except:
+            pass
+        compile_tests_command = Command(args = "javac -g -d " +
+                                        self.paths.tests_compilation_dir
+                                        + " -classpath " +
+                                        compile_cp + " " +
+                                        whole_path)
+        compile_tests_command.run()
+
+        # Run JDart on the driver program
+        whole_path = whole_path.replace(".java", ".jpf")
+
+        jdart = CommandWithTimeout(args=os.path.join(self.jpf_core_path, "bin/jpf") + " " + whole_path)
+        timeout = max(min(20, math.ceil(finish_time - time.time())), 1)
+        sys.stdout.flush()
+        sys.stderr.flush()
+        sys.stderr.write("Starting JDart on %s\n" % whole_path)
+        sys.stderr.write("Number of symbolic variables: %d\n" % len(symbolic_unit_test.sym_var_list))
+        jdart.run(timeout)
+
+
+    def collect_stats_concrete_values(self, unit_tests_name, concrete_values_iteration, concrete_values_iteration_stats):
+        """Collects statistics about concrete values that JDart produced"""
+
+        collected_values = sets.Set()
+        try:
+            with open(self.concrete_values_temporary_file, 'r') as f:
+                for line in f:
+                    if ":" in line:
+                        collected_values.add(line[:-1])
+        except:
+            pass
+
+        print "Collected values: " + str(collected_values)
+        print "Global set before adding these values: " + str(self.concrete_values_all_runs)
+
+        # Measure a contribution of the just read values to the global
+        # set concrete_values_all_runs
+        before_size = len(self.concrete_values_all_runs)
+        self.concrete_values_all_runs.update(collected_values)
+        after_size  = len(self.concrete_values_all_runs)
+
+        print "Global set after adding these values:  " + str(self.concrete_values_all_runs)
+
+        # Insert size of the collected_values set and its
+        # contribution to the global set concrete_values_all_runs
+        self.concrete_values_all_runs_stats.append([len(collected_values), after_size - before_size, unit_tests_name])
+
+        # Measure a contribution of the just read values to the local
+        # set concrete_values_iteration
+        before_size = len(concrete_values_iteration)
+        concrete_values_iteration.update(collected_values)
+        after_size  = len(concrete_values_iteration)
+
+        # Insert size of the collected_values set and its
+        # contribution to the global set concrete_values
+        concrete_values_iteration_stats.append([len(collected_values),
+                                                after_size - before_size])
+
+
     def run_jdart_loop(self, unit_tests, root_dir, classlist, timelimit, concrete_values_file_name = 'concrete-values.txt', template_filename = 'randoop-format.template'):
         """Calls JDart on the symbolized unit tests and collects concrete values used in the concolic execution"""
 
@@ -395,7 +495,6 @@ class JDoop:
 
         concrete_values_iteration = sets.Set()
         concrete_values_iteration_stats = []
-
         global_before_size = len(self.concrete_values_all_runs)
 
 
@@ -419,90 +518,54 @@ class JDoop:
             os.path.join(self.jdart_path, "build/annotations/"),
             self.paths.tests_compilation_dir])
 
-        symbolic_unit_tests = self.sort_by_num_of_sym_vars(unit_tests)
+        if self.prioritize_drivers:
+            symbolic_unit_tests = self.sort_by_num_of_sym_vars(unit_tests)
 
-        for symbolic_unit_test in symbolic_unit_tests:
-            # Write down the current time
-            current_time = time.time()
-            # Exit if we already reached the timelimit
-            if current_time >= finish_time:
-                break
+            for symbolic_unit_test in symbolic_unit_tests:
+                # Write down the current time
+                current_time = time.time()
+                # Exit if we already reached the timelimit
+                if current_time >= finish_time:
+                    break
 
-            # Generate a JPF configuration file (.jpf) for this
-            # symbolic driver program
-            whole_path = os.path.join(
-                unit_tests.randooped_package_name.replace(".", os.sep),
-                symbolic_unit_test.class_name + ".java")
-            jpf_file = GenerateConfFile(
-                unit_tests.randooped_package_name,
-                classpath,
-                "darted%i" % self.darted_count,
-                "darted",
-                symbolic_unit_test.sym_var_list,
-                self.benchmark_id
-            )
-            self.darted_count += 1
-            jpf_file.generate_jpf_conf_file(
-                whole_path,
-                whole_path.replace(".java", ".jpf"))
+                self.run_driver_with_jdart(symbolic_unit_test, unit_tests.randooped_package_name, classpath, compile_cp, finish_time)
 
-            # Compile the symbolic test, i.e. the driver program
-            try:
-                os.makedirs(self.paths.tests_compilation_dir)
-            except:
-                pass
-            compile_tests_command = Command(args = "javac -g -d " +
-                                            self.paths.tests_compilation_dir
-                                            + " -classpath " +
-                                            compile_cp + " " +
-                                            whole_path)
-            compile_tests_command.run()
+                self.collect_stats_concrete_values(unit_tests.name, concrete_values_iteration, concrete_values_iteration_stats)
 
-            # Run JDart on the driver program
-            whole_path = whole_path.replace(".java", ".jpf")
+        else:
+            shuffled_unit_tests = self.shuffle_unit_tests(unit_tests)
 
-            jdart = CommandWithTimeout(args=os.path.join(self.jpf_core_path, "bin/jpf") + " " + whole_path)
-            timeout = max(min(20, math.ceil(finish_time - time.time())), 1)
-            sys.stdout.flush()
-            sys.stderr.flush()
-            sys.stderr.write("Starting JDart on %s\n" % whole_path)
-            sys.stderr.write("Number of symbolic variables: %d\n" % len(symbolic_unit_test.sym_var_list))
-            jdart.run(timeout)
+            for unit_test_index in shuffled_unit_tests:
+                # Write down the current time
+                current_time = time.time()
+                # Exit if we already reached the timelimit
+                if current_time >= finish_time:
+                    break
 
-            collected_values = sets.Set()
-            try:
-                with open(self.concrete_values_temporary_file, 'r') as f:
-                    for line in f:
-                        if ":" in line:
-                            collected_values.add(line[:-1])
-            except:
-                pass
+                class_name = 'test' + str(unit_test_index) + 'Class'
 
-            print "Collected values: " + str(collected_values)
-            print "Global set before adding these values: " + str(self.concrete_values_all_runs)
+                symbolic_unit_test = SymbolicUnitTests(
+                    unit_tests.randooped_package_name,
+                    os.path.join(unit_tests.directory, unit_tests.name
+                                 + str(unit_test_index) +'.java'), [class_name])
+                symbolic_unit_test.generate_symbolized_unit_tests()
 
-            # Measure a contribution of the just read values to the
-            # global set concrete_values_all_runs
-            before_size = len(self.concrete_values_all_runs)
-            self.concrete_values_all_runs.update(collected_values)
-            after_size  = len(self.concrete_values_all_runs)
+                # Skip a symbolic test case if it hasn't been written
+                # to a file or if it has no symbolic variables
+                if symbolic_unit_test.wrote_test_case == False or symbolic_unit_test.sym_var_list == []:
+                    # Delete this non-needed Java file
+                    try:
+                        os.remove(os.path.join(
+                            symbolic_unit_test.path,
+                            symbolic_unit_test.class_name + ".java")
+                        )
+                    except:
+                        pass
+                    continue
 
-            print "Global set after adding these values:  " + str(self.concrete_values_all_runs)
+                self.run_driver_with_jdart(symbolic_unit_test, unit_tests.randooped_package_name, classpath, compile_cp, finish_time)
 
-            # Insert size of the collected_values set and its
-            # contribution to the global set concrete_values_all_runs
-            self.concrete_values_all_runs_stats.append([len(collected_values), after_size - before_size, unit_tests.name])
-
-            # Measure a contribution of the just read values to the
-            # local set concrete_values_iteration
-            before_size = len(concrete_values_iteration)
-            concrete_values_iteration.update(collected_values)
-            after_size  = len(concrete_values_iteration)
-
-            # Insert size of the collected_values set and its
-            # contribution to the global set concrete_values
-            concrete_values_iteration_stats.append([len(collected_values),
-                                                    after_size - before_size])
+                self.collect_stats_concrete_values(unit_tests.name, concrete_values_iteration, concrete_values_iteration_stats)
 
 
         # Collect information on contribution of this iteration to
@@ -738,6 +801,7 @@ if __name__ == "__main__":
     parser.add_argument('--baseline', default=False, action="store_true", help='The tool should run in the baseline mode')
     parser.add_argument('--classpath', default=None, help='A classpath to dependencies of tested classes')
     parser.add_argument('--generate-report', default=False, action="store_true", help='The tool should generate a code coverage report once it finishes its execution')
+    parser.add_argument('--prioritize-drivers', default=False, action="store_true", help='Prioritize drivers with more symbolic variables')
     parser.add_argument('--jpf-core-path', help='Path to the jpf-core module')
     parser.add_argument('--jdart-path', help='Path to the jdart module')
     parser.add_argument('--sut-compilation', help='Directory where class files of the package being tested can be found')
@@ -761,6 +825,7 @@ if __name__ == "__main__":
     jdoop.randoop_time = params.randoop_time
     jdoop.jdart_time = params.jdart_time
     jdoop.benchmark_id = params.benchmark_id
+    jdoop.prioritize_drivers = params.prioritize_drivers
 
     # Create a list of classes to be tested
     classlist = ClassList(params.classlist)
