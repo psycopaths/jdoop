@@ -24,7 +24,7 @@ import re, os
 class GenerateConfFile:
 
     def __init__(self, packagename, classpath, gen_package_name, source_dir,
-                 sym_var_list, benchmark_id):
+                 sym_var_list, benchmark_id, no_nhandler):
 
         self.class_name = None
         self.package_name = packagename
@@ -33,6 +33,7 @@ class GenerateConfFile:
         self.source_dir = source_dir
         self.sym_var_list = sym_var_list
         self.benchmark_id = benchmark_id
+        self.no_nhandler = no_nhandler
 
     def generate_jpf_conf_file(self, input_file_name, output_file_name):
 
@@ -41,17 +42,18 @@ class GenerateConfFile:
 
         output_file.write("# This is an automatically generated configuration file\n\n")
 
-        output_file.write("@using jpf-nhandler\n")
-        output_file.write("nhandler.delegateUnhandledNative=true\n")
-        to_skip = [
-            "java.lang.String.*",
-            "com.sun.jna.Native.sizeof",
-            "java.util.Random.nextInt"
-        ]
-        output_file.write("nhandler.spec.skip = " + ",".join(
-            ["%s" % pattern for pattern in to_skip]
-        ))
-        output_file.write("\n\n")
+        if not self.no_nhandler:
+            output_file.write("@using jpf-nhandler\n")
+            output_file.write("nhandler.delegateUnhandledNative=true\n")
+            to_skip = [
+                "java.lang.String.*",
+                "com.sun.jna.Native.sizeof",
+                "java.util.Random.nextInt"
+            ]
+            output_file.write("nhandler.spec.skip = " + ",".join(
+                ["%s" % pattern for pattern in to_skip]
+            ))
+            output_file.write("\n\n")
 
         with open(input_file_name, 'r') as f:
             for line_nl in f:
@@ -89,7 +91,8 @@ class GenerateConfFile:
             output_file.write("\n")
             output_file.write("classpath+=,%s\n" % self.classpath)
             output_file.write("\n")
-            output_file.write("native_classpath=%s\n" % self.classpath)
+            if not self.no_nhandler:
+                output_file.write("native_classpath=%s\n" % self.classpath)
             output_file.write("\n")
             output_file.write("shell=gov.nasa.jpf.jdart.JDart\n")
             output_file.write("symbolic.dp=z3\n")

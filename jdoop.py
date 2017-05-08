@@ -412,7 +412,8 @@ class JDoop:
             "darted%i" % self.darted_count,
             "darted",
             symbolic_unit_test.sym_var_list,
-            self.benchmark_id
+            self.benchmark_id,
+            self.no_nhandler
         )
         self.darted_count += 1
         jpf_file.generate_jpf_conf_file(
@@ -802,6 +803,7 @@ if __name__ == "__main__":
     parser.add_argument('--classpath', default=None, help='A classpath to dependencies of tested classes')
     parser.add_argument('--generate-report', default=False, action="store_true", help='The tool should generate a code coverage report once it finishes its execution')
     parser.add_argument('--prioritize-drivers', default=False, action="store_true", help='Prioritize drivers with more symbolic variables')
+    parser.add_argument('--no-nhandler', default=False, action="store_true", help='Disable using jpf-nhandler')
     parser.add_argument('--jpf-core-path', help='Path to the jpf-core module')
     parser.add_argument('--jdart-path', help='Path to the jdart module')
     parser.add_argument('--sut-compilation', help='Directory where class files of the package being tested can be found')
@@ -826,6 +828,7 @@ if __name__ == "__main__":
     jdoop.jdart_time = params.jdart_time
     jdoop.benchmark_id = params.benchmark_id
     jdoop.prioritize_drivers = params.prioritize_drivers
+    jdoop.no_nhandler = params.no_nhandler
 
     # Create a list of classes to be tested
     classlist = ClassList(params.classlist)
