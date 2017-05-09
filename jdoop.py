@@ -802,6 +802,7 @@ if __name__ == "__main__":
     parser.add_argument('--baseline', default=False, action="store_true", help='The tool should run in the baseline mode')
     parser.add_argument('--classpath', default=None, help='A classpath to dependencies of tested classes')
     parser.add_argument('--generate-report', default=False, action="store_true", help='The tool should generate a code coverage report once it finishes its execution')
+    parser.add_argument('--jdart-coverage-only', default=False, action="store_true", help='The tool should measure code coverage of JDart test cases only')
     parser.add_argument('--prioritize-drivers', default=False, action="store_true", help='Prioritize drivers with more symbolic variables')
     parser.add_argument('--no-nhandler', default=False, action="store_true", help='Disable using jpf-nhandler')
     parser.add_argument('--jpf-core-path', help='Path to the jpf-core module')
@@ -937,12 +938,14 @@ if __name__ == "__main__":
         jdoop.start_clock("Code coverage report")
 
         for unit_tests_suite in unit_tests_list[:-1]:
-            report = Report(jdoop.paths.lib_jacoco, [unit_tests_suite.name], classpath, params.root, jdoop.paths.sut_compilation_dir)
-            report.run_testing()
+            if params.jdart_coverage_only and not (unit_tests_suite.name[:10] == "Regression"):
+                report = Report(jdoop.paths.lib_jacoco, [unit_tests_suite.name], classpath, params.root, jdoop.paths.sut_compilation_dir)
+                report.run_testing()
 
         # Run code coverage for the last one and generate a report
-        report = Report(jdoop.paths.lib_jacoco, [unit_tests_list[-1].name], classpath, params.root, jdoop.paths.sut_compilation_dir)
-        report.run_code_coverage()
+        if params.jdart_coverage_only and not (unit_tests_list[-1].name[:10] == "Regression"):
+            report = Report(jdoop.paths.lib_jacoco, [unit_tests_list[-1].name], classpath, params.root, jdoop.paths.sut_compilation_dir)
+            report.run_code_coverage()
 
         jdoop.stop_clock("Code coverage report")
 
