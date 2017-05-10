@@ -921,10 +921,12 @@ if __name__ == "__main__":
     jdoop.stop_clock("program")
 
     if params.generate_report:
+        print "Started compiling test cases... "
         jdoop.start_clock("Compilation of unit tests")
         jdoop.compile_tests(unit_tests_list)
         jdoop.compile_tests(darted_suites)
         jdoop.stop_clock("Compilation of unit tests")
+        print "Done compiling test cases. "
 
     # A work-around for the code below that runs JaCoCo reports:
     # combine the package name and the suite name
@@ -938,12 +940,18 @@ if __name__ == "__main__":
         jdoop.start_clock("Code coverage report")
 
         for unit_tests_suite in unit_tests_list[:-1]:
-            if params.jdart_coverage_only and not (unit_tests_suite.name[:10] == "Regression"):
-                report = Report(jdoop.paths.lib_jacoco, [unit_tests_suite.name], classpath, params.root, jdoop.paths.sut_compilation_dir)
-                report.run_testing()
+            if params.jdart_coverage_only and (unit_tests_suite.name[:10] == "Regression"):
+                continue
+
+            report = Report(jdoop.paths.lib_jacoco, [unit_tests_suite.name], classpath, params.root, jdoop.paths.sut_compilation_dir)
+            report.run_testing()
 
         # Run code coverage for the last one and generate a report
-        if params.jdart_coverage_only and not (unit_tests_list[-1].name[:10] == "Regression"):
+        if params.jdart_coverage_only:
+            if not (unit_tests_list[-1].name[:10] == "Regression"):
+                report = Report(jdoop.paths.lib_jacoco, [unit_tests_list[-1].name], classpath, params.root, jdoop.paths.sut_compilation_dir)
+                report.run_code_coverage()
+        else:
             report = Report(jdoop.paths.lib_jacoco, [unit_tests_list[-1].name], classpath, params.root, jdoop.paths.sut_compilation_dir)
             report.run_code_coverage()
 
