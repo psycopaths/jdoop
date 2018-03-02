@@ -222,7 +222,7 @@ class JDoop:
 
         if params.hamcrest_path == None:
             try:
-                self.paths.lib_junit = str(config.get('lib', 'hamcrest'))
+                self.paths.lib_hamcrest = str(config.get('lib', 'hamcrest'))
             except Exception, err:
                 sys.exit("Path to the Hamcrest jar archive wasn't provided!")
         else:
